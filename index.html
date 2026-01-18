@@ -4,44 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NCLEX Exam Interface</title>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
-        /* NCLEX Specific Styling mimicry */
         body { background-color: #f0f0f0; font-family: 'Arial', sans-serif; user-select: none; }
         .nclex-header { background: #e0e6ed; border-bottom: 2px solid #cbd5e1; }
-        .nclex-btn { background: #f8fafc; border: 1px solid #94a3b8; color: #0f172a; }
-        .nclex-btn:hover { background: #e2e8f0; }
         .nclex-next { background: #3b82f6; color: white; border: 1px solid #2563eb; }
         .nclex-next:hover { background: #1d4ed8; }
         .nclex-next:disabled { background: #94a3b8; border-color: #64748b; cursor: not-allowed; }
-        
-        /* Prevent copying text */
-        .no-select { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
     </style>
 </head>
 <body>
-
 <div id="root"></div>
-
 <script type="text/babel" data-type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { 
-        getFirestore, collection, addDoc, getDoc, getDocs,
-        doc, serverTimestamp, query, where, setDoc, updateDoc 
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDoc, getDocs, doc, serverTimestamp, query, where, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCaex4bB5r2lVHPblC5pc0wCPIl8uUbtKw",
@@ -56,9 +35,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- MAIN APP ---
     function App() {
-        const [view, setView] = React.useState('login'); // 'login', 'exam', 'finished'
+        const [view, setView] = React.useState('login');
         const [studentInfo, setStudentInfo] = React.useState(null);
         const [examData, setExamData] = React.useState(null);
         const [questions, setQuestions] = React.useState([]);
@@ -79,7 +57,6 @@
         );
     }
 
-    // --- SCREEN 1: LOGIN ---
     function LoginScreen({ db, onJoin }) {
         const [examId, setExamId] = React.useState("");
         const [name, setName] = React.useState("");
@@ -91,239 +68,145 @@
             e.preventDefault();
             setError("");
             setLoading(true);
-
             try {
-                // 1. Check if Exam Exists
                 const examRef = doc(db, "exams", examId.trim());
                 const examSnap = await getDoc(examRef);
-
-                if (!examSnap.exists()) {
-                    throw new Error("Exam ID not found. Please check with your instructor.");
-                }
-
+                if (!examSnap.exists()) throw new Error("Exam ID not found.");
                 const data = examSnap.data();
 
-                // 2. Check Access Control
                 if (data.allowedEmails && data.allowedEmails.length > 0) {
-                    if (!data.allowedEmails.includes(email.trim())) {
-                        throw new Error("Access Denied: Your email is not on the allowed list for this exam.");
-                    }
+                    if (!data.allowedEmails.includes(email.trim())) throw new Error("Access Denied.");
                 }
 
-                // 3. Fetch Questions
                 const qQuery = query(collection(db, "questions"), where("examId", "==", examId.trim()));
                 const qSnap = await getDocs(qQuery);
-                
-                if (qSnap.empty) {
-                    throw new Error("This exam has no questions loaded.");
-                }
+                if (qSnap.empty) throw new Error("No questions found.");
+                const qs = qSnap.docs.map(d => ({id: d.id, ...d.data()})).sort(() => Math.random() - 0.5);
 
-                const qs = qSnap.docs.map(d => ({id: d.id, ...d.data()}));
-                // Randomize questions for security
-                const shuffledQs = qs.sort(() => Math.random() - 0.5);
-
-                // 4. Create/Update Session in Firestore (For Live Proctoring)
-                // We use email_examId as a unique key so refreshing brings them back to same session ideally,
-                // but for this "strict" version we just create a new session doc or update existing.
                 const sessionId = `${email.replace(/[^a-zA-Z0-9]/g, '')}_${examId}`;
                 await setDoc(doc(db, "sessions", sessionId), {
-                    studentName: name,
-                    studentEmail: email,
-                    examId: examId,
-                    examTitle: data.title,
-                    currentQuestionIndex: 0,
-                    totalQuestions: shuffledQs.length,
-                    status: 'active',
-                    lastActive: serverTimestamp(),
-                    answers: {} // Map of questionId -> answer
+                    studentName: name, studentEmail: email, examId: examId, examTitle: data.title,
+                    currentQuestionIndex: 0, totalQuestions: qs.length, status: 'active',
+                    startTime: serverTimestamp(), // Track when they started
+                    lastActive: serverTimestamp(), answers: {}
                 });
-
-                onJoin({ name, email, sessionId }, { id: examId, ...data }, shuffledQs);
-
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
+                onJoin({ name, email, sessionId }, { id: examId, ...data }, qs);
+            } catch (err) { setError(err.message); } finally { setLoading(false); }
         };
 
         return (
             <div className="flex-1 flex items-center justify-center bg-slate-200">
                 <div className="bg-white p-8 rounded shadow-md max-w-md w-full border-t-4 border-blue-600">
                     <h1 className="text-2xl font-bold text-slate-800 mb-1">Student Login</h1>
-                    <p className="text-slate-500 text-sm mb-6">Enter your details to begin the exam.</p>
-
-                    {error && <div className="bg-red-50 text-red-600 p-3 text-sm rounded mb-4 border border-red-200">{error}</div>}
-
+                    <p className="text-slate-500 text-sm mb-6">Enter your details to begin.</p>
+                    {error && <div className="bg-red-50 text-red-600 p-3 text-sm rounded mb-4">{error}</div>}
                     <form onSubmit={handleJoin} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Full Name</label>
-                            <input required type="text" className="w-full p-2 border rounded" value={name} onChange={e => setName(e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Email Address</label>
-                            <input required type="email" className="w-full p-2 border rounded" value={email} onChange={e => setEmail(e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Exam ID</label>
-                            <input required type="text" className="w-full p-2 border rounded font-mono" placeholder="Paste ID here..." value={examId} onChange={e => setExamId(e.target.value)} />
-                        </div>
-
-                        <button disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700 transition">
-                            {loading ? "Verifying..." : "Begin Exam"}
-                        </button>
+                        <input required type="text" placeholder="Full Name" className="w-full p-2 border rounded" value={name} onChange={e => setName(e.target.value)} />
+                        <input required type="email" placeholder="Email" className="w-full p-2 border rounded" value={email} onChange={e => setEmail(e.target.value)} />
+                        <input required type="text" placeholder="Exam ID" className="w-full p-2 border rounded font-mono" value={examId} onChange={e => setExamId(e.target.value)} />
+                        <button disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700">{loading ? "Verifying..." : "Begin Exam"}</button>
                     </form>
                 </div>
             </div>
         );
     }
 
-    // --- SCREEN 2: EXAM INTERFACE (NCLEX STYLE) ---
     function ExamInterface({ db, student, exam, questions, onFinish }) {
         const [currentIndex, setCurrentIndex] = React.useState(0);
-        const [selectedIndices, setSelectedIndices] = React.useState([]); // Array for SATA
-        const [showCalc, setShowCalc] = React.useState(false);
+        const [selectedIndices, setSelectedIndices] = React.useState([]);
         const [submitting, setSubmitting] = React.useState(false);
+        const [timeLeft, setTimeLeft] = React.useState(null);
 
         const currentQ = questions[currentIndex];
         const isLast = currentIndex === questions.length - 1;
 
-        // Toggle Calculator
-        const Calculator = () => (
-            <div className="absolute top-16 left-4 bg-slate-800 p-4 rounded shadow-xl z-50 w-64 text-white">
-                <div className="flex justify-between mb-2 border-b border-slate-600 pb-2">
-                    <span className="text-xs font-bold">CALCULATOR</span>
-                    <button onClick={() => setShowCalc(false)} className="text-red-400 hover:text-white">✕</button>
-                </div>
-                <div className="grid grid-cols-4 gap-2 text-center">
-                    {/* Simplified Calc UI just for look/feel */}
-                    {['7','8','9','/','4','5','6','*','1','2','3','-','0','.','=','+'].map(k => (
-                        <button key={k} className="bg-slate-600 p-2 rounded hover:bg-slate-500">{k}</button>
-                    ))}
-                </div>
-                <div className="mt-2 text-xs text-slate-400 text-center">*Standard UI Only*</div>
-            </div>
-        );
+        // --- TIMER LOGIC ---
+        React.useEffect(() => {
+            const limitMins = exam.timeLimit || 60; // Default 60 mins
+            const durationSecs = limitMins * 60;
+            setTimeLeft(durationSecs);
+
+            const timer = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        handleFinish(); // Auto-submit
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }, []);
+
+        const formatTime = (secs) => {
+            const m = Math.floor(secs / 60);
+            const s = secs % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        };
 
         const handleOptionSelect = (optIdx) => {
             if (currentQ.isSATA) {
-                // Toggle logic
-                if (selectedIndices.includes(optIdx)) {
-                    setSelectedIndices(selectedIndices.filter(i => i !== optIdx));
-                } else {
-                    setSelectedIndices([...selectedIndices, optIdx]);
-                }
-            } else {
-                // Single logic
-                setSelectedIndices([optIdx]);
-            }
+                if (selectedIndices.includes(optIdx)) setSelectedIndices(selectedIndices.filter(i => i !== optIdx));
+                else setSelectedIndices([...selectedIndices, optIdx]);
+            } else setSelectedIndices([optIdx]);
         };
 
         const handleNext = async () => {
             setSubmitting(true);
             try {
-                // 1. Save Answer to Firestore Session
-                const answerData = {
-                    questionId: currentQ.id,
-                    selectedOptions: selectedIndices,
-                    timestamp: new Date().toISOString()
-                };
-
                 const sessionRef = doc(db, "sessions", student.sessionId);
-                
-                // We update the specific question in a map, and the current index
                 await updateDoc(sessionRef, {
-                    [`answers.${currentQ.id}`]: answerData,
-                    currentQuestionIndex: currentIndex + 1,
-                    lastActive: serverTimestamp()
+                    [`answers.${currentQ.id}`]: {
+                        questionId: currentQ.id, selectedOptions: selectedIndices, timestamp: new Date().toISOString()
+                    },
+                    currentQuestionIndex: currentIndex + 1, lastActive: serverTimestamp()
                 });
 
-                if (isLast) {
-                    await updateDoc(sessionRef, { status: 'completed' });
-                    onFinish();
-                } else {
-                    setSelectedIndices([]);
-                    setCurrentIndex(prev => prev + 1);
-                    setSubmitting(false);
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Network Error: Could not save answer. Please check internet connection.");
-                setSubmitting(false);
-            }
+                if (isLast) handleFinish();
+                else { setSelectedIndices([]); setCurrentIndex(prev => prev + 1); setSubmitting(false); }
+            } catch (err) { alert("Error saving answer."); setSubmitting(false); }
+        };
+
+        const handleFinish = async () => {
+            setSubmitting(true);
+            try {
+                await updateDoc(doc(db, "sessions", student.sessionId), { status: 'completed' });
+                onFinish();
+            } catch (e) { console.error(e); }
         };
 
         return (
             <div className="flex flex-col h-full bg-white relative">
-                {showCalc && <Calculator />}
-
-                {/* HEADER */}
-                <header className="nclex-header p-2 flex justify-between items-center h-14 shrink-0">
-                    <div className="flex gap-4">
-                        <button onClick={() => setShowCalc(!showCalc)} className="flex items-center gap-2 px-3 py-1 bg-white border rounded shadow-sm text-sm hover:bg-slate-50">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-                            Calculator
-                        </button>
-                    </div>
-                    
-                    <div className="text-sm font-bold text-slate-700">
-                        {student.name} | {exam.title}
-                    </div>
-
+                <header className="nclex-header p-2 flex justify-between items-center h-14 shrink-0 px-6">
+                    <div className="text-sm font-bold text-slate-700">{student.name} | {exam.title}</div>
                     <div className="flex gap-4 text-sm font-mono items-center">
-                        <div className="bg-slate-200 px-3 py-1 rounded">
-                            Question {currentIndex + 1} of {questions.length}
-                        </div>
-                        <div className="text-slate-600">
-                            Time: <span className="font-bold">--:--</span>
+                        <div className="bg-slate-200 px-3 py-1 rounded">Question {currentIndex + 1} / {questions.length}</div>
+                        <div className={`font-bold text-lg ${timeLeft < 60 ? 'text-red-600 animate-pulse' : 'text-slate-700'}`}>
+                            Time: {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
                         </div>
                     </div>
                 </header>
-
-                {/* MAIN CONTENT SPLIT */}
                 <div className="flex-1 flex overflow-hidden">
-                    
-                    {/* Left: Question Stem */}
                     <div className="w-1/2 p-8 overflow-y-auto border-r border-slate-200 bg-white">
-                        <h2 className="text-xl leading-relaxed text-slate-800 font-medium">
-                            {currentQ.text}
-                        </h2>
-                        {currentQ.isSATA && (
-                            <div className="mt-4 p-3 bg-blue-50 text-blue-800 text-sm font-bold border border-blue-100 inline-block rounded">
-                                NOTE: Select all that apply.
-                            </div>
-                        )}
+                        <h2 className="text-xl leading-relaxed text-slate-800 font-medium">{currentQ.text}</h2>
+                        {currentQ.isSATA && <div className="mt-4 p-3 bg-blue-50 text-blue-800 text-sm font-bold border border-blue-100 inline-block rounded">Select all that apply.</div>}
                     </div>
-
-                    {/* Right: Options */}
                     <div className="w-1/2 p-8 bg-slate-50 overflow-y-auto flex flex-col justify-between">
                         <div className="space-y-4">
                             {currentQ.options.map((opt, idx) => {
                                 const isSelected = selectedIndices.includes(idx);
                                 return (
-                                    <div 
-                                        key={idx}
-                                        onClick={() => handleOptionSelect(idx)}
-                                        className={`flex gap-4 p-4 rounded border-2 cursor-pointer transition-all hover:bg-white hover:shadow-sm items-start ${isSelected ? 'border-blue-600 bg-white shadow-md' : 'border-slate-200 bg-white'}`}
-                                    >
-                                        <div className={`w-6 h-6 shrink-0 flex items-center justify-center border-2 rounded-full mt-0.5 ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'}`}>
-                                            {isSelected && <span className="text-xs">●</span>}
-                                        </div>
+                                    <div key={idx} onClick={() => handleOptionSelect(idx)} className={`flex gap-4 p-4 rounded border-2 cursor-pointer hover:bg-white hover:shadow-sm items-start ${isSelected ? 'border-blue-600 bg-white shadow-md' : 'border-slate-200 bg-white'}`}>
+                                        <div className={`w-6 h-6 shrink-0 flex items-center justify-center border-2 rounded-full mt-0.5 ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'}`}>{isSelected && <span className="text-xs">●</span>}</div>
                                         <div className="text-lg text-slate-700">{opt}</div>
                                     </div>
                                 );
                             })}
                         </div>
-
-                        {/* Footer / Next Button */}
                         <div className="mt-10 flex justify-end pt-6 border-t border-slate-200">
-                            <button 
-                                onClick={handleNext}
-                                disabled={selectedIndices.length === 0 || submitting}
-                                className="nclex-next px-8 py-3 rounded text-lg font-bold shadow-sm flex items-center gap-2"
-                            >
+                            <button onClick={handleNext} disabled={selectedIndices.length === 0 || submitting} className="nclex-next px-8 py-3 rounded text-lg font-bold shadow-sm flex items-center gap-2">
                                 {submitting ? 'Saving...' : (isLast ? 'Submit Exam' : 'Next Question')}
-                                {!submitting && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>}
                             </button>
                         </div>
                     </div>
@@ -332,31 +215,19 @@
         );
     }
 
-    // --- SCREEN 3: FINISHED ---
     function FinishedScreen() {
         return (
             <div className="flex-1 flex flex-col items-center justify-center bg-slate-100 text-center p-8">
                 <div className="bg-white p-12 rounded-lg shadow-lg max-w-lg border-t-8 border-green-500">
-                    <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
-                    </div>
                     <h2 className="text-3xl font-bold text-slate-800 mb-4">Exam Completed</h2>
-                    <p className="text-slate-600 mb-8 text-lg">
-                        Your answers have been successfully recorded. You may now close this window or wait for the proctor's instructions.
-                    </p>
-                    <button onClick={() => window.close()} className="text-slate-400 hover:text-slate-600 underline">
-                        Close Window
-                    </button>
+                    <p className="text-slate-600 mb-8 text-lg">Your answers have been recorded. You may close this window.</p>
                 </div>
             </div>
         );
     }
 
-    // Mount App
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
-
 </script>
-
 </body>
 </html>
