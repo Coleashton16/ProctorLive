@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProctorLive | Instructor Dashboard</title>
+    
+    <!-- 1. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- 3. Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 4. Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- 5. Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .scroller::-webkit-scrollbar { width: 6px; }
+        .scroller::-webkit-scrollbar-track { background: #f1f1f1; }
+        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel" data-type="module">
+    /*******************************************************
+     * FIREBASE SETUP
+     *******************************************************/
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { 
+        getFirestore, collection, addDoc, onSnapshot, 
+        deleteDoc, updateDoc, doc, serverTimestamp, query, orderBy, where 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCaex4bB5r2lVHPblC5pc0wCPIl8uUbtKw",
+      authDomain: "proctorlive-dae37.firebaseapp.com",
+      projectId: "proctorlive-dae37",
+      storageBucket: "proctorlive-dae37.firebasestorage.app",
+      messagingSenderId: "1063605117912",
+      appId: "1:1063605117912:web:eea13aa3e743d55ee308ad",
+      measurementId: "G-5RSFDE9W8Q"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    /*******************************************************
+     * UI COMPONENTS
+     *******************************************************/
+    
+    const Icon = ({ name, size = 20, className = "" }) => {
+        const icons = {
+            plus: <path d="M12 5v14M5 12h14" />,
+            list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
+            trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
+            check: <path d="M20 6L9 17l-5-5" />,
+            layout: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />,
+            users: <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />,
+            book: <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />,
+            lock: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        };
+        return (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" 
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
+                className={className}>
+                {icons[name] || icons.plus}
+            </svg>
+        );
+    };
+
+    // --- MAIN APP ---
+    function App() {
+        const [activeTab, setActiveTab] = React.useState('exams'); // 'exams', 'add', 'list'
+        const [selectedExamId, setSelectedExamId] = React.useState(null); // Filter context
+        const [notification, setNotification] = React.useState(null);
+
+        const showNotification = (msg, type = 'success') => {
+            setNotification({ msg, type });
+            setTimeout(() => setNotification(null), 3000);
+        };
+
+        // If user wants to add question but hasn't selected an exam, warn them
+        const handleTabChange = (tab) => {
+            if (tab === 'add' && !selectedExamId) {
+                showNotification("Please select or create an Exam first!", "error");
+                setActiveTab('exams');
+                return;
+            }
+            setActiveTab(tab);
+        };
+
+        return (
+            <div className="min-h-screen flex flex-col md:flex-row">
+                
+                {/* SIDEBAR */}
+                <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
+                    <div className="p-6 border-b border-slate-700">
+                        <h1 className="text-xl font-bold flex items-center gap-2">
+                            <Icon name="layout" className="text-blue-400" />
+                            ProctorLive
+                        </h1>
+                        <p className="text-slate-400 text-xs mt-1">Instructor Dashboard</p>
+                    </div>
+                    
+                    <nav className="flex-1 p-4 space-y-2">
+                        <button 
+                            onClick={() => handleTabChange('exams')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'exams' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                        >
+                            <Icon name="book" /> My Exams
+                        </button>
+                        <div className="pt-4 pb-2 px-4 text-xs font-bold text-slate-500 uppercase">
+                            Editor
+                        </div>
+                        <button 
+                            onClick={() => handleTabChange('add')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'add' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                        >
+                            <Icon name="plus" /> Add Question
+                        </button>
+                        <button 
+                            onClick={() => handleTabChange('list')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'list' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                        >
+                            <Icon name="list" /> Question Bank
+                        </button>
+                    </nav>
+
+                    {/* Current Context Display */}
+                    {selectedExamId && (
+                        <div className="p-4 bg-slate-800 mx-4 mb-4 rounded border border-slate-700">
+                            <p className="text-xs text-slate-400 uppercase font-bold mb-1">Active Exam Context</p>
+                            <div className="flex items-center gap-2 text-green-400 font-mono text-sm">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                Selected
+                            </div>
+                        </div>
+                    )}
+                </aside>
+
+                {/* MAIN CONTENT */}
+                <main className="flex-1 p-6 md:p-10 overflow-hidden flex flex-col h-screen">
+                    
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-6 shrink-0">
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-800">
+                                {activeTab === 'exams' && 'Exam Management'}
+                                {activeTab === 'add' && 'Create New Question'}
+                                {activeTab === 'list' && 'Review Questions'}
+                            </h2>
+                            <p className="text-slate-500 text-sm mt-1">
+                                {activeTab === 'exams' && 'Create tests and manage student access.'}
+                                {activeTab === 'add' && 'Add Single Choice or SATA questions.'}
+                                {activeTab === 'list' && 'View and edit questions for the selected exam.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Notification Toast */}
+                    {notification && (
+                        <div className={`fixed top-5 right-5 z-50 px-6 py-4 rounded shadow-lg text-white animate-bounce ${notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+                            {notification.msg}
+                        </div>
+                    )}
+
+                    {/* Content Area */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden relative">
+                        {activeTab === 'exams' && 
+                            <ExamManager 
+                                db={db} 
+                                showNotification={showNotification} 
+                                onSelectExam={(id) => { setSelectedExamId(id); setActiveTab('add'); }}
+                                selectedId={selectedExamId}
+                            />
+                        }
+                        {activeTab === 'add' && 
+                            <AddQuestionForm 
+                                db={db} 
+                                examId={selectedExamId} 
+                                showNotification={showNotification} 
+                            />
+                        }
+                        {activeTab === 'list' && 
+                            <QuestionList 
+                                db={db} 
+                                examId={selectedExamId} 
+                                showNotification={showNotification} 
+                            />
+                        }
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    // --- COMPONENT: EXAM MANAGER ---
+    function ExamManager({ db, showNotification, onSelectExam, selectedId }) {
+        const [exams, setExams] = React.useState([]);
+        const [newExamTitle, setNewExamTitle] = React.useState("");
+        const [creating, setCreating] = React.useState(false);
+        const [editingAccess, setEditingAccess] = React.useState(null); 
+        const [accessText, setAccessText] = React.useState("");
+
+        React.useEffect(() => {
+            // Simplified query to prevent indexing issues
+            // We sort in JS to ensure new items always show up
+            const q = query(collection(db, "exams"));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const fetchedExams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Client-side sort by createdAt (newest first)
+                fetchedExams.sort((a, b) => {
+                    const tA = a.createdAt?.seconds || 0;
+                    const tB = b.createdAt?.seconds || 0;
+                    return tB - tA;
+                });
+                setExams(fetchedExams);
+            });
+            return () => unsubscribe();
+        }, []);
+
+        const handleCreate = async (e) => {
+            e.preventDefault();
+            if (!newExamTitle.trim()) return;
+            setCreating(true);
+            try {
+                await addDoc(collection(db, "exams"), {
+                    title: newExamTitle,
+                    createdAt: serverTimestamp(),
+                    allowedEmails: [],
+                    status: 'open'
+                });
+                showNotification("Exam created!");
+                setNewExamTitle("");
+            } catch (err) {
+                console.error(err);
+                showNotification("Error: " + err.message, "error");
+            } finally {
+                setCreating(false);
+            }
+        };
+
+        const openAccessEditor = (exam) => {
+            setEditingAccess(exam.id);
+            setAccessText((exam.allowedEmails || []).join(', '));
+        };
+
+        const saveAccessList = async (examId) => {
+            const emails = accessText.split(',').map(e => e.trim()).filter(e => e !== "");
+            try {
+                await updateDoc(doc(db, "exams", examId), { allowedEmails: emails });
+                showNotification("Access list updated!");
+                setEditingAccess(null);
+            } catch (err) {
+                showNotification("Error updating access", "error");
+            }
+        };
+
+        return (
+            <div className="flex flex-col h-full">
+                {/* Create Bar */}
+                <div className="p-6 border-b border-slate-100 bg-slate-50">
+                    <form onSubmit={handleCreate} className="flex gap-4">
+                        <input 
+                            type="text" 
+                            value={newExamTitle}
+                            onChange={(e) => setNewExamTitle(e.target.value)}
+                            placeholder="Enter new exam title (e.g. 'Cardiology Review 101')..."
+                            className="flex-1 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                        <button 
+                            type="submit" 
+                            disabled={creating}
+                            className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${creating ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+                        >
+                            {creating ? 'Creating...' : 'Create Exam'}
+                        </button>
+                    </form>
+                </div>
+
+                {/* List */}
+                <div className="flex-1 overflow-y-auto p-6 scroller grid grid-cols-1 lg:grid-cols-2 gap-6 content-start">
+                    {exams.map(exam => (
+                        <div key={exam.id} className={`border rounded-xl p-5 transition-all ${selectedId === exam.id ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/30' : 'border-slate-200 hover:border-blue-300'}`}>
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="font-bold text-lg text-slate-800">{exam.title}</h3>
+                                    <p className="text-xs text-slate-500">ID: {exam.id}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => onSelectExam(exam.id)}
+                                        className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold hover:bg-blue-200"
+                                    >
+                                        {selectedId === exam.id ? 'Selected' : 'Select'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Access Control Section */}
+                            <div className="bg-white border border-slate-200 rounded p-3 mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+                                        <Icon name="users" size={14} /> Allowed Students
+                                    </span>
+                                    {editingAccess !== exam.id && (
+                                        <button onClick={() => openAccessEditor(exam)} className="text-xs text-blue-600 hover:underline">Edit Access</button>
+                                    )}
+                                </div>
+                                
+                                {editingAccess === exam.id ? (
+                                    <div className="space-y-2">
+                                        <textarea 
+                                            value={accessText}
+                                            onChange={(e) => setAccessText(e.target.value)}
+                                            className="w-full text-sm p-2 border rounded"
+                                            rows="3"
+                                            placeholder="student1@email.com, student2@email.com"
+                                        />
+                                        <div className="flex gap-2 justify-end">
+                                            <button onClick={() => setEditingAccess(null)} className="text-xs text-slate-500">Cancel</button>
+                                            <button onClick={() => saveAccessList(exam.id)} className="text-xs bg-green-600 text-white px-3 py-1 rounded">Save</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-600 truncate">
+                                        {exam.allowedEmails && exam.allowedEmails.length > 0 
+                                            ? exam.allowedEmails.join(", ") 
+                                            : <span className="text-slate-400 italic">No restrictions (Public) or No students added</span>}
+                                    </p>
+                                )}
+                            </div>
+
+                            <button onClick={() => onSelectExam(exam.id)} className="w-full py-2 border border-blue-200 text-blue-600 rounded hover:bg-blue-50 font-medium text-sm flex items-center justify-center gap-2">
+                                <Icon name="plus" size={16} /> Add Questions to this Exam
+                            </button>
+                        </div>
+                    ))}
+                    
+                    {exams.length === 0 && (
+                        <div className="col-span-full text-center py-10 text-slate-400">
+                            No exams created yet. Use the bar above to create your first test.
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // --- COMPONENT: ADD QUESTION FORM (SATA Supported) ---
+    function AddQuestionForm({ db, examId, showNotification }) {
+        const [isSATA, setIsSATA] = React.useState(false);
+        const [loading, setLoading] = React.useState(false);
+        const [formData, setFormData] = React.useState({
+            text: '', opt1: '', opt2: '', opt3: '', opt4: '', rationale: ''
+        });
+        const [correctIndices, setCorrectIndices] = React.useState([]);
+
+        const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+        const toggleCorrect = (idx) => {
+            if (isSATA) {
+                if (correctIndices.includes(idx)) {
+                    setCorrectIndices(correctIndices.filter(i => i !== idx));
+                } else {
+                    setCorrectIndices([...correctIndices, idx]);
+                }
+            } else {
+                setCorrectIndices([idx]);
+            }
+        };
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            if (correctIndices.length === 0) {
+                showNotification("Please select at least one correct answer", "error");
+                return;
+            }
+            if (!examId) {
+                showNotification("No Exam Selected! Go to 'My Exams' tab.", "error");
+                return;
+            }
+
+            setLoading(true);
+            try {
+                await addDoc(collection(db, "questions"), {
+                    examId: examId,
+                    text: formData.text,
+                    options: [formData.opt1, formData.opt2, formData.opt3, formData.opt4],
+                    correctIndices: correctIndices.sort(),
+                    isSATA: isSATA,
+                    rationale: formData.rationale,
+                    createdAt: serverTimestamp()
+                });
+                
+                showNotification("Question added!");
+                setFormData({ text: '', opt1: '', opt2: '', opt3: '', opt4: '', rationale: '' });
+                setCorrectIndices([]);
+            } catch (err) {
+                console.error(err);
+                showNotification("Error saving question.", "error");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (!examId) return (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <Icon name="book" size={48} className="mb-4 text-slate-300" />
+                <p>Please select an Exam from the "My Exams" tab first.</p>
+            </div>
+        );
+
+        return (
+            <div className="p-8 scroller overflow-y-auto h-full">
+                <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-6">
+                    
+                    <div className="flex justify-between items-center">
+                        <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded text-sm font-bold">
+                            Adding to: {examId}
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={isSATA} 
+                                onChange={(e) => { setIsSATA(e.target.checked); setCorrectIndices([]); }}
+                                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-slate-700 font-semibold">Select All That Apply (SATA)</span>
+                        </label>
+                    </div>
+
+                    {/* Question Stem */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Question Stem</label>
+                        <textarea 
+                            name="text" value={formData.text} onChange={handleChange} required rows="3"
+                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-800"
+                            placeholder="e.g. Which of the following are symptoms of..."
+                        ></textarea>
+                    </div>
+
+                    {/* Options Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[1, 2, 3, 4].map((num, idx) => (
+                            <div key={num} className={`relative p-4 rounded-lg border transition-all ${correctIndices.includes(idx) ? 'border-green-500 bg-green-50' : 'border-slate-200'}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-bold text-slate-500 uppercase">Option {String.fromCharCode(65 + idx)}</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => toggleCorrect(idx)}
+                                        className={`w-6 h-6 rounded flex items-center justify-center border ${correctIndices.includes(idx) ? 'bg-green-500 border-green-500 text-white' : 'border-slate-300 text-transparent hover:border-green-400'}`}
+                                    >
+                                        <Icon name="check" size={14} />
+                                    </button>
+                                </div>
+                                <input 
+                                    type="text" name={`opt${num}`} value={formData[`opt${num}`]} onChange={handleChange} required
+                                    className="w-full p-2 border-b border-transparent focus:border-blue-500 bg-transparent outline-none"
+                                    placeholder={`Answer choice ${num}...`}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Rationale */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Clinical Rationale</label>
+                        <textarea 
+                            name="rationale" value={formData.rationale} onChange={handleChange} required rows="2"
+                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="Explanation..."
+                        ></textarea>
+                    </div>
+
+                    <div className="pt-6">
+                        <button type="submit" disabled={loading} className={`w-full md:w-auto px-8 py-3 rounded-lg font-semibold text-white shadow-md transition-all flex items-center justify-center gap-2 ${loading ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                            {loading ? 'Saving...' : 'Save Question'}
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        );
+    }
+
+    // --- COMPONENT: QUESTION LIST (Filtered) ---
+    function QuestionList({ db, examId, showNotification }) {
+        const [questions, setQuestions] = React.useState([]);
+        const [loading, setLoading] = React.useState(true);
+
+        React.useEffect(() => {
+            if (!examId) {
+                setLoading(false);
+                setQuestions([]);
+                return;
+            }
+            // Simple query then client side sort to match ExamManager consistency
+            const q = query(collection(db, "questions"), where("examId", "==", examId));
+            
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const fetchedQs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Client sort
+                fetchedQs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                setQuestions(fetchedQs);
+                setLoading(false);
+            });
+            return () => unsubscribe();
+        }, [examId]);
+
+        const handleDelete = async (id) => {
+            if(!confirm("Delete this question?")) return;
+            try { await deleteDoc(doc(db, "questions", id)); showNotification("Deleted.", "success"); } 
+            catch (err) { showNotification("Failed to delete.", "error"); }
+        };
+
+        if (!examId) return <div className="p-10 text-center text-slate-400">Please select an Exam from "My Exams" to view questions.</div>;
+        if (loading) return <div className="p-10 text-center text-slate-500">Loading questions...</div>;
+        if (questions.length === 0) return <div className="p-10 text-center text-slate-500">No questions found for this exam.</div>;
+
+        return (
+            <div className="h-full overflow-y-auto scroller">
+                <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            <th className="p-4 font-semibold text-slate-600 text-sm border-b">Type</th>
+                            <th className="p-4 font-semibold text-slate-600 text-sm border-b">Question Stem</th>
+                            <th className="p-4 font-semibold text-slate-600 text-sm border-b w-32">Answer(s)</th>
+                            <th className="p-4 font-semibold text-slate-600 text-sm border-b w-24">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {questions.map((q) => (
+                            <tr key={q.id} className="hover:bg-slate-50">
+                                <td className="p-4">
+                                    <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${q.isSATA ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'}`}>
+                                        {q.isSATA ? 'SATA' : 'Single'}
+                                    </span>
+                                </td>
+                                <td className="p-4">
+                                    <p className="font-medium text-slate-800 line-clamp-2">{q.text}</p>
+                                    <p className="text-xs text-slate-500 mt-1 line-clamp-1">{q.rationale}</p>
+                                </td>
+                                <td className="p-4">
+                                    <div className="flex gap-1">
+                                        {(q.correctIndices || [q.correctAnswerIndex]).map(idx => (
+                                            <span key={idx} className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">
+                                                {String.fromCharCode(65 + parseInt(idx))}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </td>
+                                <td className="p-4">
+                                    <button onClick={() => handleDelete(q.id)} className="p-2 text-slate-400 hover:text-red-600">
+                                        <Icon name="trash" size={18} />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+
+</script>
+
+</body>
+</html>
