@@ -3,24 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NCLEX Exam Interface</title>
+    <title>Student Portal | ProctorLive</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Font: Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        body { background-color: #f0f0f0; font-family: 'Arial', sans-serif; user-select: none; }
-        .nclex-header { background: #e0e6ed; border-bottom: 2px solid #cbd5e1; }
-        .nclex-next { background: #3b82f6; color: white; border: 1px solid #2563eb; }
-        .nclex-next:hover { background: #1d4ed8; }
-        .nclex-next:disabled { background: #94a3b8; border-color: #64748b; cursor: not-allowed; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; user-select: none; }
+        .scroller::-webkit-scrollbar { width: 6px; }
+        .scroller::-webkit-scrollbar-track { background: transparent; }
+        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .scroller::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
+
 <div id="root"></div>
+
 <script type="text/babel" data-type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDoc, getDocs, doc, serverTimestamp, query, where, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { 
+        getFirestore, collection, addDoc, getDoc, getDocs,
+        doc, serverTimestamp, query, where, setDoc, updateDoc, onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { 
+        getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, 
+        signOut, onAuthStateChanged, updateProfile 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCaex4bB5r2lVHPblC5pc0wCPIl8uUbtKw",
@@ -34,105 +58,453 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // --- Icons Helper ---
+    const Icon = ({ name, size = 20, className = "" }) => {
+        const icons = {
+            clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+            chevronRight: <polyline points="9 18 15 12 9 6"/>,
+            alert: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>,
+            check: <polyline points="20 6 9 17 4 12"/>,
+            user: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+            mail: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>,
+            key: <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>,
+            lock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+            book: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>,
+            grad: <><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></>,
+            logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></>,
+            search: <><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></>
+        };
+        const renderPath = icons[name] || icons.clock;
+        return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{renderPath}</svg>;
+    };
 
     function App() {
-        const [view, setView] = React.useState('login');
-        const [studentInfo, setStudentInfo] = React.useState(null);
-        const [examData, setExamData] = React.useState(null);
-        const [questions, setQuestions] = React.useState([]);
+        const [user, setUser] = React.useState(null);
+        const [loading, setLoading] = React.useState(true);
+        const [view, setView] = React.useState('auth'); // auth, dashboard, exam
+        
+        // Exam Session State
+        const [activeExamData, setActiveExamData] = React.useState(null);
+        const [activeQuestions, setActiveQuestions] = React.useState([]);
+        const [activeSessionId, setActiveSessionId] = React.useState(null);
 
-        const startExam = (info, data, qs) => {
-            setStudentInfo(info);
-            setExamData(data);
-            setQuestions(qs);
+        React.useEffect(() => {
+            const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+                setUser(currentUser);
+                setLoading(false);
+                if (currentUser && view === 'auth') setView('dashboard');
+                if (!currentUser) setView('auth');
+            });
+            return () => unsubscribe();
+        }, []);
+
+        const startExam = (exam, questions, sessionId) => {
+            setActiveExamData(exam);
+            setActiveQuestions(questions);
+            setActiveSessionId(sessionId);
             setView('exam');
         };
 
+        const handleFinish = () => {
+            setView('dashboard');
+            setActiveExamData(null);
+        };
+
+        if (loading) return <div className="h-screen flex items-center justify-center bg-slate-900 text-white">Loading Portal...</div>;
+
         return (
-            <div className="h-screen w-screen overflow-hidden flex flex-col">
-                {view === 'login' && <LoginScreen db={db} onJoin={startExam} />}
-                {view === 'exam' && <ExamInterface db={db} student={studentInfo} exam={examData} questions={questions} onFinish={() => setView('finished')} />}
-                {view === 'finished' && <FinishedScreen />}
-            </div>
+            <>
+                {view === 'auth' && <AuthScreen setUser={setUser} setView={setView} />}
+                {view === 'dashboard' && <DashboardLayout user={user} db={db} onStartExam={startExam} />}
+                {view === 'exam' && <ExamInterface db={db} student={{name: user.displayName, uid: user.uid}} exam={activeExamData} questions={activeQuestions} sessionId={activeSessionId} onFinish={handleFinish} />}
+            </>
         );
     }
 
-    function LoginScreen({ db, onJoin }) {
-        const [examId, setExamId] = React.useState("");
-        const [name, setName] = React.useState("");
-        const [email, setEmail] = React.useState("");
-        const [error, setError] = React.useState("");
-        const [loading, setLoading] = React.useState(false);
+    // --- 1. AUTH SCREEN (Login/Register) ---
+    function AuthScreen({ setUser, setView }) {
+        const [isRegister, setIsRegister] = React.useState(false);
+        const [email, setEmail] = React.useState('');
+        const [password, setPassword] = React.useState('');
+        const [name, setName] = React.useState('');
+        const [error, setError] = React.useState('');
+        const [busy, setBusy] = React.useState(false);
 
-        const handleJoin = async (e) => {
+        const handleSubmit = async (e) => {
             e.preventDefault();
-            setError("");
-            setLoading(true);
+            setError('');
+            setBusy(true);
             try {
-                const examRef = doc(db, "exams", examId.trim());
-                const examSnap = await getDoc(examRef);
-                if (!examSnap.exists()) throw new Error("Exam ID not found.");
-                const data = examSnap.data();
-
-                if (data.allowedEmails && data.allowedEmails.length > 0) {
-                    if (!data.allowedEmails.includes(email.trim())) throw new Error("Access Denied.");
+                if (isRegister) {
+                    const cred = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(cred.user, { displayName: name });
+                    await setDoc(doc(db, "users", cred.user.uid), {
+                        name: name,
+                        email: email,
+                        role: 'student',
+                        createdAt: serverTimestamp()
+                    });
+                    setUser(cred.user);
+                } else {
+                    const cred = await signInWithEmailAndPassword(auth, email, password);
+                    setUser(cred.user);
                 }
-
-                const qQuery = query(collection(db, "questions"), where("examId", "==", examId.trim()));
-                const qSnap = await getDocs(qQuery);
-                if (qSnap.empty) throw new Error("No questions found.");
-                const qs = qSnap.docs.map(d => ({id: d.id, ...d.data()})).sort(() => Math.random() - 0.5);
-
-                const sessionId = `${email.replace(/[^a-zA-Z0-9]/g, '')}_${examId}`;
-                await setDoc(doc(db, "sessions", sessionId), {
-                    studentName: name, studentEmail: email, examId: examId, examTitle: data.title,
-                    currentQuestionIndex: 0, totalQuestions: qs.length, status: 'active',
-                    startTime: serverTimestamp(), // Track when they started
-                    lastActive: serverTimestamp(), answers: {}
-                });
-                onJoin({ name, email, sessionId }, { id: examId, ...data }, qs);
-            } catch (err) { setError(err.message); } finally { setLoading(false); }
+                setView('dashboard');
+            } catch (err) {
+                setError(err.message.replace('Firebase: ', ''));
+            } finally {
+                setBusy(false);
+            }
         };
 
         return (
-            <div className="flex-1 flex items-center justify-center bg-slate-200">
-                <div className="bg-white p-8 rounded shadow-md max-w-md w-full border-t-4 border-blue-600">
-                    <h1 className="text-2xl font-bold text-slate-800 mb-1">Student Login</h1>
-                    <p className="text-slate-500 text-sm mb-6">Enter your details to begin.</p>
-                    {error && <div className="bg-red-50 text-red-600 p-3 text-sm rounded mb-4">{error}</div>}
-                    <form onSubmit={handleJoin} className="space-y-4">
-                        <input required type="text" placeholder="Full Name" className="w-full p-2 border rounded" value={name} onChange={e => setName(e.target.value)} />
-                        <input required type="email" placeholder="Email" className="w-full p-2 border rounded" value={email} onChange={e => setEmail(e.target.value)} />
-                        <input required type="text" placeholder="Exam ID" className="w-full p-2 border rounded font-mono" value={examId} onChange={e => setExamId(e.target.value)} />
-                        <button disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700">{loading ? "Verifying..." : "Begin Exam"}</button>
+            <div className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -translate-x-1/2 -translate-y-1/2"></div>
+                <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"></div>
+
+                <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl w-full max-w-md z-10">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Teaching Portal</h1>
+                        <p className="text-slate-400 text-sm">{isRegister ? "Create your student account" : "Sign in to access exams"}</p>
+                    </div>
+
+                    {error && <div className="bg-red-500/20 text-red-200 p-3 rounded-lg mb-4 text-sm border border-red-500/30">{error}</div>}
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {isRegister && (
+                            <div className="relative">
+                                <Icon name="user" className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                                <input type="text" placeholder="Full Name" className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 outline-none focus:border-indigo-500" value={name} onChange={e => setName(e.target.value)} required />
+                            </div>
+                        )}
+                        <div className="relative">
+                            <Icon name="mail" className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                            <input type="email" placeholder="Email Address" className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 outline-none focus:border-indigo-500" value={email} onChange={e => setEmail(e.target.value)} required />
+                        </div>
+                        <div className="relative">
+                            <Icon name="lock" className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                            <input type="password" placeholder="Password" className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 outline-none focus:border-indigo-500" value={password} onChange={e => setPassword(e.target.value)} required />
+                        </div>
+
+                        <button disabled={busy} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex justify-center">
+                            {busy ? 'Processing...' : (isRegister ? 'Create Account' : 'Sign In')}
+                        </button>
                     </form>
+
+                    <div className="mt-6 text-center">
+                        <button onClick={() => setIsRegister(!isRegister)} className="text-indigo-400 hover:text-indigo-300 text-sm font-medium">
+                            {isRegister ? "Already have an account? Sign In" : "New student? Create Account"}
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    function ExamInterface({ db, student, exam, questions, onFinish }) {
+    // --- 2. DASHBOARD LAYOUT (Sidebar + Main) ---
+    function DashboardLayout({ user, db, onStartExam }) {
+        const [activeTab, setActiveTab] = React.useState('exams'); 
+
+        return (
+            <div className="flex h-screen bg-[#F1F5F9]">
+                <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0">
+                    <div className="p-6 border-b border-slate-800">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-lg">
+                                {user.displayName ? user.displayName.charAt(0) : 'S'}
+                            </div>
+                            <div className="overflow-hidden">
+                                <h3 className="font-bold text-sm truncate">{user.displayName || 'Student'}</h3>
+                                <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <nav className="flex-1 p-4 space-y-2">
+                        <button onClick={() => setActiveTab('exams')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === 'exams' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                            <Icon name="book" /> My Exams
+                        </button>
+                        <button onClick={() => setActiveTab('gradebook')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === 'gradebook' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                            <Icon name="grad" /> Gradebook
+                        </button>
+                    </nav>
+
+                    <div className="p-4 border-t border-slate-800">
+                        <button onClick={() => signOut(auth)} className="w-full flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-400 transition-colors text-sm font-bold">
+                            <Icon name="logout" size={16} /> Sign Out
+                        </button>
+                    </div>
+                </aside>
+
+                <main className="flex-1 overflow-hidden flex flex-col">
+                    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
+                        <h2 className="text-xl font-bold text-slate-800">
+                            {activeTab === 'exams' ? 'Exam Registry' : 'My Performance & Reviews'}
+                        </h2>
+                    </header>
+                    <div className="flex-1 overflow-y-auto p-8 scroller">
+                        {activeTab === 'exams' ? (
+                            <MyExamsView user={user} db={db} onStartExam={onStartExam} />
+                        ) : (
+                            <GradebookView user={user} db={db} />
+                        )}
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    // --- 2a. MY EXAMS VIEW (Modified: Gray out completed) ---
+    function MyExamsView({ user, db, onStartExam }) {
+        const [exams, setExams] = React.useState([]);
+        const [sessions, setSessions] = React.useState({}); // examId -> session
+        const [manualId, setManualId] = React.useState('');
+        const [loading, setLoading] = React.useState(true);
+
+        React.useEffect(() => {
+            if (!user.email) return;
+            const q = query(collection(db, "exams"), where("status", "==", "open"));
+            const unsubscribe = onSnapshot(q, (snap) => {
+                const list = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                const myExams = list.filter(e => {
+                    const isPublic = !e.allowedEmails || e.allowedEmails.length === 0;
+                    const isAllowed = e.allowedEmails && e.allowedEmails.includes(user.email);
+                    return isPublic || isAllowed;
+                });
+                setExams(myExams);
+                setLoading(false);
+            });
+            return () => unsubscribe();
+        }, [user.email]);
+
+        // Fetch User Sessions to track progress/completion
+        React.useEffect(() => {
+            const q = query(collection(db, "sessions"), where("userId", "==", user.uid));
+            const unsubscribe = onSnapshot(q, (snap) => {
+                const sessMap = {};
+                snap.docs.forEach(doc => {
+                    const data = doc.data();
+                    sessMap[data.examId] = data;
+                });
+                setSessions(sessMap);
+            });
+            return () => unsubscribe();
+        }, [user.uid]);
+
+        const handleManualRegister = async (e) => {
+            e.preventDefault();
+            if (!manualId.trim()) return;
+            try {
+                const docRef = doc(db, "exams", manualId.trim());
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().status === 'open') {
+                    prepareExam(docSnap.id, docSnap.data());
+                } else {
+                    alert("Exam ID not found or closed.");
+                }
+            } catch (err) { alert("Error finding exam."); }
+        };
+
+        const prepareExam = async (examId, examData) => {
+            // Check if already completed first locally (double check)
+            if (sessions[examId]?.status === 'completed') {
+                return; // Do nothing if completed
+            }
+
+            const qQuery = query(collection(db, "questions"), where("examId", "==", examId));
+            const qSnap = await getDocs(qQuery);
+            if (qSnap.empty) { alert("No questions in this exam."); return; }
+            
+            const qs = qSnap.docs.map(d => ({id: d.id, ...d.data()})).sort(() => Math.random() - 0.5);
+            
+            const sessionId = `${user.uid}_${examId}`;
+            await setDoc(doc(db, "sessions", sessionId), {
+                userId: user.uid,
+                studentName: user.displayName,
+                studentEmail: user.email,
+                examId: examId,
+                examTitle: examData.title,
+                totalQuestions: qs.length,
+                status: 'active',
+                startTime: serverTimestamp(),
+                lastActive: serverTimestamp(),
+                answers: {}
+            }, { merge: true });
+
+            onStartExam(examData, qs, sessionId);
+        };
+
+        return (
+            <div className="max-w-5xl mx-auto">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8 flex items-center justify-between gap-6">
+                    <div>
+                        <h3 className="font-bold text-slate-800">Have an Exam Code?</h3>
+                        <p className="text-sm text-slate-500">Enter the unique ID provided by your instructor to begin.</p>
+                    </div>
+                    <form onSubmit={handleManualRegister} className="flex gap-2">
+                        <div className="relative">
+                            <Icon name="search" className="absolute left-3 top-3 text-slate-400" size={16} />
+                            <input type="text" placeholder="Enter Exam ID" value={manualId} onChange={e => setManualId(e.target.value)} className="pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm" />
+                        </div>
+                        <button className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors">Start Exam</button>
+                    </form>
+                </div>
+
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Available Exams</h3>
+                
+                {loading ? <div className="text-slate-400">Loading exams...</div> : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {exams.map(exam => {
+                            const userSession = sessions[exam.id];
+                            const isCompleted = userSession?.status === 'completed';
+                            const isActive = userSession?.status === 'active';
+                            
+                            return (
+                                <div key={exam.id} className={`bg-white p-6 rounded-2xl shadow-sm border border-slate-100 transition-all group ${isCompleted ? 'opacity-60 grayscale' : 'hover:shadow-md hover:border-indigo-200'}`}>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600'}`}>
+                                            <Icon name={isCompleted ? "lock" : "book"} />
+                                        </div>
+                                        <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">{exam.timeLimit || 60}m</span>
+                                    </div>
+                                    <h4 className="font-bold text-lg text-slate-800 mb-1">{exam.title}</h4>
+                                    <p className="text-xs text-slate-400 mb-6">ID: {exam.id}</p>
+                                    
+                                    <button 
+                                        onClick={() => prepareExam(exam.id, exam)} 
+                                        disabled={isCompleted}
+                                        className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${
+                                            isCompleted 
+                                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                : isActive
+                                                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                    : 'bg-indigo-50 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white'
+                                        }`}
+                                    >
+                                        {isCompleted ? "Completed" : (isActive ? "Continue Exam" : "Take Exam")}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                        {exams.length === 0 && <p className="text-slate-400 italic">No exams currently assigned to you.</p>}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // --- 2b. GRADEBOOK VIEW ---
+    function GradebookView({ user, db }) {
+        const [sessions, setSessions] = React.useState([]);
+        const [requests, setRequests] = React.useState({});
+
+        React.useEffect(() => {
+            const q = query(collection(db, "sessions"), where("userId", "==", user.uid), where("status", "==", "completed"));
+            const unsubscribe = onSnapshot(q, (snap) => {
+                const list = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                list.sort((a,b) => (b.startTime?.seconds || 0) - (a.startTime?.seconds || 0));
+                setSessions(list);
+            });
+
+            const rQ = query(collection(db, "review_requests"), where("studentId", "==", user.uid));
+            const unsubReq = onSnapshot(rQ, (snap) => {
+                const reqMap = {};
+                snap.docs.forEach(d => {
+                    const data = d.data();
+                    reqMap[data.examId] = data.status;
+                });
+                setRequests(reqMap);
+            });
+
+            return () => { unsubscribe(); unsubReq(); };
+        }, [user.uid]);
+
+        const requestReview = async (session) => {
+            try {
+                await addDoc(collection(db, "review_requests"), {
+                    studentId: user.uid,
+                    studentName: user.displayName,
+                    examId: session.examId,
+                    examTitle: session.examTitle,
+                    status: 'pending',
+                    requestedAt: serverTimestamp()
+                });
+            } catch (e) { alert("Error requesting review"); }
+        };
+
+        return (
+            <div className="max-w-5xl mx-auto">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
+                            <tr>
+                                <th className="p-6">Exam Title</th>
+                                <th className="p-6">Date Taken</th>
+                                <th className="p-6 text-center">Score</th>
+                                <th className="p-6 text-right">Review Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {sessions.map(sess => {
+                                const reqStatus = requests[sess.examId];
+                                const score = sess.score !== undefined ? sess.score : '?';
+                                let scoreColor = 'text-slate-800';
+                                if (score >= 80) scoreColor = 'text-green-600';
+                                else if (score < 70) scoreColor = 'text-red-600';
+
+                                return (
+                                    <tr key={sess.id} className="hover:bg-slate-50">
+                                        <td className="p-6 font-bold text-slate-800">{sess.examTitle}</td>
+                                        <td className="p-6 text-sm text-slate-500">{new Date(sess.startTime?.seconds * 1000).toLocaleDateString()}</td>
+                                        <td className={`p-6 text-center font-bold text-lg ${scoreColor}`}>{score}%</td>
+                                        <td className="p-6 text-right">
+                                            {!reqStatus && (
+                                                <button onClick={() => requestReview(sess)} className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded hover:bg-indigo-100 transition-colors">
+                                                    Request Review
+                                                </button>
+                                            )}
+                                            {reqStatus === 'pending' && (
+                                                <span className="text-xs font-bold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded flex items-center justify-end gap-1 ml-auto w-fit">
+                                                    <Icon name="clock" size={12} /> Pending Approval
+                                                </span>
+                                            )}
+                                            {reqStatus === 'approved' && (
+                                                <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1.5 rounded flex items-center justify-end gap-1 ml-auto w-fit">
+                                                    <Icon name="check" size={12} /> Approved (Ask Proctor)
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {sessions.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-slate-400">No completed exams found.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    }
+
+    // --- 3. EXAM INTERFACE (Calculates Score on Finish, No Calculator) ---
+    function ExamInterface({ db, student, exam, questions, sessionId, onFinish }) {
         const [currentIndex, setCurrentIndex] = React.useState(0);
-        const [selectedIndices, setSelectedIndices] = React.useState([]);
+        const [selectedIndices, setSelectedIndices] = React.useState([]); 
+        const [answers, setAnswers] = React.useState({});
         const [submitting, setSubmitting] = React.useState(false);
         const [timeLeft, setTimeLeft] = React.useState(null);
 
         const currentQ = questions[currentIndex];
         const isLast = currentIndex === questions.length - 1;
+        const progress = ((currentIndex + 1) / questions.length) * 100;
 
-        // --- TIMER LOGIC ---
         React.useEffect(() => {
-            const limitMins = exam.timeLimit || 60; // Default 60 mins
-            const durationSecs = limitMins * 60;
-            setTimeLeft(durationSecs);
-
+            const limitMins = exam.timeLimit || 60;
+            setTimeLeft(limitMins * 60);
             const timer = setInterval(() => {
                 setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        handleFinish(); // Auto-submit
-                        return 0;
-                    }
+                    if (prev <= 1) { clearInterval(timer); handleFinish(true); return 0; }
                     return prev - 1;
                 });
             }, 1000);
@@ -149,64 +521,113 @@
             if (currentQ.isSATA) {
                 if (selectedIndices.includes(optIdx)) setSelectedIndices(selectedIndices.filter(i => i !== optIdx));
                 else setSelectedIndices([...selectedIndices, optIdx]);
-            } else setSelectedIndices([optIdx]);
+            } else {
+                setSelectedIndices([optIdx]);
+            }
+        };
+
+        const saveCurrentAnswer = async () => {
+            const newAnswers = { ...answers, [currentQ.id]: selectedIndices };
+            setAnswers(newAnswers);
+
+            const sessionRef = doc(db, "sessions", sessionId);
+            await updateDoc(sessionRef, {
+                [`answers.${currentQ.id}`]: {
+                    questionId: currentQ.id,
+                    selectedOptions: selectedIndices,
+                    timestamp: new Date().toISOString()
+                },
+                currentQuestionIndex: currentIndex + 1,
+                lastActive: serverTimestamp()
+            });
+            return newAnswers;
         };
 
         const handleNext = async () => {
             setSubmitting(true);
             try {
-                const sessionRef = doc(db, "sessions", student.sessionId);
-                await updateDoc(sessionRef, {
-                    [`answers.${currentQ.id}`]: {
-                        questionId: currentQ.id, selectedOptions: selectedIndices, timestamp: new Date().toISOString()
-                    },
-                    currentQuestionIndex: currentIndex + 1, lastActive: serverTimestamp()
-                });
-
-                if (isLast) handleFinish();
-                else { setSelectedIndices([]); setCurrentIndex(prev => prev + 1); setSubmitting(false); }
-            } catch (err) { alert("Error saving answer."); setSubmitting(false); }
+                await saveCurrentAnswer();
+                if (isLast) {
+                    await handleFinish();
+                } else {
+                    setSelectedIndices([]);
+                    setCurrentIndex(prev => prev + 1);
+                    setSubmitting(false);
+                }
+            } catch (err) {
+                alert("Network Error");
+                setSubmitting(false);
+            }
         };
 
-        const handleFinish = async () => {
+        const handleFinish = async (forced = false) => {
             setSubmitting(true);
             try {
-                await updateDoc(doc(db, "sessions", student.sessionId), { status: 'completed' });
+                const finalAnswers = forced ? answers : { ...answers, [currentQ.id]: selectedIndices };
+                
+                let correctCount = 0;
+                questions.forEach(q => {
+                    const studentAns = finalAnswers[q.id] || [];
+                    const correctAns = q.correctIndices || [q.correctAnswerIndex];
+                    const s1 = [...studentAns].sort().join(',');
+                    const s2 = [...correctAns].sort().join(',');
+                    if (s1 === s2) correctCount++;
+                });
+                
+                const finalScore = Math.round((correctCount / questions.length) * 100);
+
+                await updateDoc(doc(db, "sessions", sessionId), { 
+                    status: 'completed',
+                    score: finalScore
+                });
                 onFinish();
-            } catch (e) { console.error(e); }
+            } catch(e) { console.error(e); }
         };
 
         return (
-            <div className="flex flex-col h-full bg-white relative">
-                <header className="nclex-header p-2 flex justify-between items-center h-14 shrink-0 px-6">
-                    <div className="text-sm font-bold text-slate-700">{student.name} | {exam.title}</div>
-                    <div className="flex gap-4 text-sm font-mono items-center">
-                        <div className="bg-slate-200 px-3 py-1 rounded">Question {currentIndex + 1} / {questions.length}</div>
-                        <div className={`font-bold text-lg ${timeLeft < 60 ? 'text-red-600 animate-pulse' : 'text-slate-700'}`}>
-                            Time: {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
+            <div className="flex flex-col h-full bg-[#f8fafc] relative">
+                <header className="bg-white h-20 border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-20 shrink-0">
+                    <div className="flex flex-col">
+                        <h1 className="text-lg font-bold text-slate-800">{exam.title}</h1>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                            <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">{student.name}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <div className="hidden md:flex flex-col items-end mr-4">
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Progress</div>
+                            <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-500 transition-all duration-500 ease-out" style={{width: `${progress}%`}}></div></div>
+                        </div>
+                        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${timeLeft < 300 ? 'bg-red-50 border-red-200 text-red-600' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                            <Icon name="clock" size={18} />
+                            <span className="font-mono font-bold text-lg tabular-nums">{timeLeft !== null ? formatTime(timeLeft) : '--:--'}</span>
                         </div>
                     </div>
                 </header>
                 <div className="flex-1 flex overflow-hidden">
-                    <div className="w-1/2 p-8 overflow-y-auto border-r border-slate-200 bg-white">
-                        <h2 className="text-xl leading-relaxed text-slate-800 font-medium">{currentQ.text}</h2>
-                        {currentQ.isSATA && <div className="mt-4 p-3 bg-blue-50 text-blue-800 text-sm font-bold border border-blue-100 inline-block rounded">Select all that apply.</div>}
+                    <div className="w-1/2 p-10 overflow-y-auto bg-white border-r border-slate-200 flex flex-col">
+                        <div className="mb-6">
+                            <span className="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-3">Question {currentIndex + 1} of {questions.length}</span>
+                            {currentQ.isSATA && <div className="bg-purple-50 border border-purple-100 text-purple-700 px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 mb-4 animate-fade-in"><Icon name="check" size={16} /> Select All That Apply</div>}
+                        </div>
+                        <h2 className="text-2xl font-medium text-slate-800 leading-relaxed font-serif tracking-tight">{currentQ.text}</h2>
                     </div>
-                    <div className="w-1/2 p-8 bg-slate-50 overflow-y-auto flex flex-col justify-between">
+                    <div className="w-1/2 bg-[#f8fafc] p-10 overflow-y-auto flex flex-col justify-between">
                         <div className="space-y-4">
                             {currentQ.options.map((opt, idx) => {
                                 const isSelected = selectedIndices.includes(idx);
                                 return (
-                                    <div key={idx} onClick={() => handleOptionSelect(idx)} className={`flex gap-4 p-4 rounded border-2 cursor-pointer hover:bg-white hover:shadow-sm items-start ${isSelected ? 'border-blue-600 bg-white shadow-md' : 'border-slate-200 bg-white'}`}>
-                                        <div className={`w-6 h-6 shrink-0 flex items-center justify-center border-2 rounded-full mt-0.5 ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'}`}>{isSelected && <span className="text-xs">●</span>}</div>
-                                        <div className="text-lg text-slate-700">{opt}</div>
+                                    <div key={idx} onClick={() => handleOptionSelect(idx)} className={`group relative p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 ease-out flex items-start gap-5 ${isSelected ? 'border-indigo-600 bg-indigo-50/50 shadow-sm ring-1 ring-indigo-600/20' : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md'}`}>
+                                        <div className={`w-7 h-7 shrink-0 rounded-lg border-2 flex items-center justify-center transition-all mt-0.5 ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-slate-50 border-slate-300 group-hover:border-indigo-400'}`}>{isSelected && <Icon name="check" size={14} />}</div>
+                                        <div className={`text-lg transition-colors ${isSelected ? 'text-indigo-900 font-medium' : 'text-slate-600'}`}>{opt}</div>
                                     </div>
                                 );
                             })}
                         </div>
-                        <div className="mt-10 flex justify-end pt-6 border-t border-slate-200">
-                            <button onClick={handleNext} disabled={selectedIndices.length === 0 || submitting} className="nclex-next px-8 py-3 rounded text-lg font-bold shadow-sm flex items-center gap-2">
-                                {submitting ? 'Saving...' : (isLast ? 'Submit Exam' : 'Next Question')}
+                        <div className="mt-8 pt-6 border-t border-slate-200 flex justify-end">
+                            <button onClick={handleNext} disabled={selectedIndices.length === 0 || submitting} className={`px-10 py-4 rounded-xl text-lg font-bold shadow-lg flex items-center gap-3 transition-all transform hover:-translate-y-1 active:scale-95 ${selectedIndices.length === 0 ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'}`}>
+                                {submitting ? 'Processing...' : (isLast ? 'Submit Exam' : 'Next Question')}
+                                {!submitting && <Icon name="chevronRight" size={24} />}
                             </button>
                         </div>
                     </div>
@@ -215,19 +636,9 @@
         );
     }
 
-    function FinishedScreen() {
-        return (
-            <div className="flex-1 flex flex-col items-center justify-center bg-slate-100 text-center p-8">
-                <div className="bg-white p-12 rounded-lg shadow-lg max-w-lg border-t-8 border-green-500">
-                    <h2 className="text-3xl font-bold text-slate-800 mb-4">Exam Completed</h2>
-                    <p className="text-slate-600 mb-8 text-lg">Your answers have been recorded. You may close this window.</p>
-                </div>
-            </div>
-        );
-    }
-
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
+
 </script>
 </body>
 </html>
