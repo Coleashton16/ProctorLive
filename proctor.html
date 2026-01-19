@@ -18,20 +18,15 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Font: Plus Jakarta Sans (Modern Geometric) -->
+    <!-- Font: Plus Jakarta Sans -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
-        
-        /* Smooth Scrollbar */
         .scroller::-webkit-scrollbar { width: 6px; height: 6px; }
         .scroller::-webkit-scrollbar-track { background: transparent; }
         .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .scroller::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        /* Glass effect for overlays */
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body>
@@ -58,39 +53,40 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- Modern Icon Component ---
+    // --- Icon Component ---
     const Icon = ({ name, size = 20, className = "" }) => {
         const icons = {
-            plus: <path d="M12 5v14M5 12h14" />,
-            list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
-            trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
-            check: <path d="M20 6L9 17l-5-5" />,
-            layout: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />,
-            users: <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />,
-            book: <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />,
-            chart: <path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3" />,
-            clock: <path d="M12 2v20M2 12h20" />,
-            eye: <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 5c-3.866 0-7 5.134-7 7 0 1.866 3.134 7 7 7 3.866 0 7-5.134 7-7 0-1.866-3.134-7-7-7z" />,
-            xCircle: <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />,
-            chevronDown: <path d="M6 9l6 6 6-6" />,
-            chevronUp: <path d="M18 15l-6-6-6 6" />,
-            x: <path d="M18 6L6 18M6 6l12 12" />,
+            layout: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></>,
+            chart: <><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></>,
             edit: <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />,
-            pencil: <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+            bell: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>,
+            check: <polyline points="20 6 9 17 4 12" />,
+            xCircle: <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>,
+            refresh: <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>,
+            trash: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>,
+            users: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+            clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+            plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+            eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+            pencil: <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />,
+            x: <path d="M18 6L6 18M6 6l12 12" />,
+            book: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>
         };
-        return (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" 
-                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
-                className={className}>
-                {icons[name] || icons.plus}
-            </svg>
-        );
+        return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{icons[name] || icons.layout}</svg>;
     };
 
     function App() {
-        const [activeTab, setActiveTab] = React.useState('exams');
+        const [activeTab, setActiveTab] = React.useState('exams'); // exams, results, reviews, editor
         const [selectedExamId, setSelectedExamId] = React.useState(null);
         const [notification, setNotification] = React.useState(null);
+        const [pendingCount, setPendingCount] = React.useState(0);
+
+        // Listen for global pending count for review requests
+        React.useEffect(() => {
+            const q = query(collection(db, "review_requests"), where("status", "==", "pending"));
+            const unsubscribe = onSnapshot(q, (snap) => setPendingCount(snap.size));
+            return () => unsubscribe();
+        }, []);
 
         const showNotification = (msg, type = 'success') => {
             setNotification({ msg, type });
@@ -98,7 +94,6 @@
         };
 
         const handleTabChange = (tab) => {
-            // Simplified Navigation Logic
             if (tab === 'editor' && !selectedExamId) {
                 showNotification("Please select an Exam from the Dashboard first!", "error");
                 setActiveTab('exams');
@@ -109,7 +104,7 @@
 
         return (
             <div className="flex h-screen bg-[#F1F5F9]">
-                {/* --- MODERN SIDEBAR --- */}
+                {/* SIDEBAR */}
                 <aside className="w-20 md:w-64 bg-[#0F172A] text-white flex flex-col shrink-0 transition-all duration-300 shadow-2xl z-20">
                     <div className="p-6 flex items-center gap-3 border-b border-gray-800">
                         <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/50">
@@ -119,27 +114,24 @@
                     </div>
                     
                     <nav className="flex-1 p-4 space-y-2 mt-4">
-                        <NavButton 
-                            isActive={activeTab === 'exams'} 
-                            onClick={() => handleTabChange('exams')} 
-                            icon="layout" 
-                            label="Dashboard" 
-                        />
-                        <NavButton 
-                            isActive={activeTab === 'results'} 
-                            onClick={() => handleTabChange('results')} 
-                            icon="chart" 
-                            label="Results & Grading" 
-                        />
-                        <div className="hidden md:block px-4 pt-6 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                            Content
-                        </div>
-                        <NavButton 
-                            isActive={activeTab === 'editor'} 
-                            onClick={() => handleTabChange('editor')} 
-                            icon="edit" 
-                            label="Question Editor" 
-                        />
+                        <NavButton isActive={activeTab === 'exams'} onClick={() => handleTabChange('exams')} icon="layout" label="Dashboard" />
+                        <NavButton isActive={activeTab === 'results'} onClick={() => handleTabChange('results')} icon="chart" label="Results & Grading" />
+                        
+                        <button 
+                            onClick={() => handleTabChange('reviews')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${activeTab === 'reviews' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 translate-x-1' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                        >
+                            <Icon name="bell" className={activeTab === 'reviews' ? 'text-white' : 'text-gray-500 group-hover:text-white'} />
+                            <span className="hidden md:block font-medium">Review Queue</span>
+                            {pendingCount > 0 && (
+                                <span className="absolute right-2 top-3 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full animate-pulse">
+                                    {pendingCount}
+                                </span>
+                            )}
+                        </button>
+
+                        <div className="hidden md:block px-4 pt-6 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Content</div>
+                        <NavButton isActive={activeTab === 'editor'} onClick={() => handleTabChange('editor')} icon="edit" label="Question Editor" />
                     </nav>
 
                     <div className="p-4 border-t border-gray-800">
@@ -157,26 +149,17 @@
                     </div>
                 </aside>
 
-                {/* --- MAIN CONTENT AREA --- */}
+                {/* MAIN CONTENT */}
                 <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-                    {/* Header */}
                     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm shrink-0 z-10">
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-800">
-                                {activeTab === 'exams' && 'Exam Dashboard'}
-                                {activeTab === 'results' && 'Performance & Grading'}
-                                {activeTab === 'editor' && 'Question Editor'}
-                            </h2>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm font-medium text-gray-500">Instructor Mode</span>
-                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-xs border border-gray-300">
-                                IN
-                            </div>
-                        </div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            {activeTab === 'exams' && 'Exam Dashboard'}
+                            {activeTab === 'results' && 'Student Performance'}
+                            {activeTab === 'reviews' && 'Review Requests'}
+                            {activeTab === 'editor' && 'Question Editor'}
+                        </h2>
                     </header>
 
-                    {/* Toast Notification */}
                     {notification && (
                         <div className={`absolute top-20 right-8 z-50 px-6 py-4 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 animate-bounce ${notification.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                             <Icon name={notification.type === 'success' ? 'check' : 'xCircle'} />
@@ -184,48 +167,25 @@
                         </div>
                     )}
 
-                    {/* Scrollable Workspace */}
                     <div className="flex-1 overflow-y-auto scroller p-8">
-                        {activeTab === 'exams' && 
-                            <ExamManager 
-                                db={db} 
-                                showNotification={showNotification} 
-                                onSelectExam={(id) => { setSelectedExamId(id); setActiveTab('editor'); }}
-                                selectedId={selectedExamId}
-                            />
-                        }
-                        {activeTab === 'results' && 
-                            <ResultsViewer db={db} showNotification={showNotification} />
-                        }
-                        {activeTab === 'editor' && 
-                            <QuestionEditorLayout 
-                                db={db} 
-                                examId={selectedExamId} 
-                                showNotification={showNotification} 
-                            />
-                        }
+                        {activeTab === 'exams' && <ExamManager db={db} showNotification={showNotification} onSelectExam={(id) => { setSelectedExamId(id); setActiveTab('editor'); }} selectedId={selectedExamId} />}
+                        {activeTab === 'results' && <ResultsViewer db={db} showNotification={showNotification} />}
+                        {activeTab === 'reviews' && <ReviewInbox db={db} showNotification={showNotification} />}
+                        {activeTab === 'editor' && <QuestionEditorLayout db={db} examId={selectedExamId} showNotification={showNotification} />}
                     </div>
                 </main>
             </div>
         );
     }
 
-    // --- Helper Component: Nav Button ---
     const NavButton = ({ isActive, onClick, icon, label }) => (
-        <button 
-            onClick={onClick}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                isActive 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 translate-x-1' 
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-            }`}
-        >
+        <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 translate-x-1' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}>
             <Icon name={icon} className={isActive ? 'text-white' : 'text-gray-500 group-hover:text-white'} />
             <span className="hidden md:block font-medium">{label}</span>
         </button>
     );
 
-    // --- 1. EXAM MANAGER (MODERN CARDS) ---
+    // --- 1. EXAM MANAGER ---
     function ExamManager({ db, showNotification, onSelectExam, selectedId }) {
         const [exams, setExams] = React.useState([]);
         const [newExamTitle, setNewExamTitle] = React.useState("");
@@ -258,11 +218,7 @@
                 });
                 showNotification("Exam created successfully!");
                 setNewExamTitle("");
-            } catch (err) {
-                showNotification("Error: " + err.message, "error");
-            } finally {
-                setCreating(false);
-            }
+            } catch (err) { showNotification("Error: " + err.message, "error"); } finally { setCreating(false); }
         };
 
         const saveAccessList = async (examId) => {
@@ -271,49 +227,28 @@
                 await updateDoc(doc(db, "exams", examId), { allowedEmails: emails });
                 showNotification("Access list updated!");
                 setEditingAccess(null);
-            } catch (err) {
-                showNotification("Update failed", "error");
-            }
+            } catch (err) { showNotification("Update failed", "error"); }
         };
 
         return (
             <div className="max-w-6xl mx-auto">
-                {/* Create Bar */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-4">Create New Exam</h3>
                     <form onSubmit={handleCreate} className="flex flex-col md:flex-row gap-4 items-end">
                         <div className="flex-1 w-full">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Exam Title</label>
-                            <input 
-                                type="text" 
-                                value={newExamTitle} 
-                                onChange={(e) => setNewExamTitle(e.target.value)} 
-                                placeholder="e.g. 'Final Cardiology Review'" 
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                                required 
-                            />
+                            <input type="text" value={newExamTitle} onChange={(e) => setNewExamTitle(e.target.value)} placeholder="e.g. 'Final Cardiology Review'" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" required />
                         </div>
                         <div className="w-full md:w-32">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Time (Min)</label>
-                            <input 
-                                type="number" 
-                                value={timeLimit} 
-                                onChange={(e) => setTimeLimit(e.target.value)} 
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
-                                required min="1" 
-                            />
+                            <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" required min="1" />
                         </div>
-                        <button 
-                            type="submit" 
-                            disabled={creating} 
-                            className="w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-indigo-200 disabled:bg-gray-300"
-                        >
+                        <button type="submit" disabled={creating} className="w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-indigo-200 disabled:bg-gray-300">
                             {creating ? 'Creating...' : 'Create Exam'}
                         </button>
                     </form>
                 </div>
 
-                {/* Exam Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {exams.map(exam => (
                         <div key={exam.id} className={`group bg-white rounded-2xl p-6 border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${selectedId === exam.id ? 'border-indigo-500 ring-2 ring-indigo-100 shadow-lg' : 'border-gray-100 shadow-sm'}`}>
@@ -325,52 +260,28 @@
                                         <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md text-gray-400">ID: {exam.id.substring(0,6)}...</span>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => onSelectExam(exam.id)} 
-                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${selectedId === exam.id ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}
-                                >
+                                <button onClick={() => onSelectExam(exam.id)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${selectedId === exam.id ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
                                     {selectedId === exam.id ? 'Active' : 'Select'}
                                 </button>
                             </div>
-
-                            {/* Access Control Mini-Panel */}
                             <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 mb-4">
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
-                                        <Icon name="users" size={12} /> Allowed Students
-                                    </span>
-                                    {editingAccess !== exam.id && (
-                                        <button onClick={() => { setEditingAccess(exam.id); setAccessText((exam.allowedEmails || []).join(', ')); }} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Edit List</button>
-                                    )}
+                                    <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1"><Icon name="users" size={12} /> Allowed Students</span>
+                                    {editingAccess !== exam.id && <button onClick={() => { setEditingAccess(exam.id); setAccessText((exam.allowedEmails || []).join(', ')); }} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Edit List</button>}
                                 </div>
-                                
                                 {editingAccess === exam.id ? (
                                     <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
-                                        <textarea 
-                                            value={accessText} 
-                                            onChange={(e) => setAccessText(e.target.value)} 
-                                            className="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
-                                            rows="3" 
-                                            placeholder="student1@email.com, student2@email.com" 
-                                        />
+                                        <textarea value={accessText} onChange={(e) => setAccessText(e.target.value)} className="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" rows="3" placeholder="student1@email.com, student2@email.com" />
                                         <div className="flex gap-2 justify-end">
                                             <button onClick={() => setEditingAccess(null)} className="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
                                             <button onClick={() => saveAccessList(exam.id)} className="text-xs bg-emerald-500 text-white px-3 py-1 rounded-md hover:bg-emerald-600">Save</button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-gray-600 truncate">
-                                        {exam.allowedEmails && exam.allowedEmails.length > 0 
-                                            ? exam.allowedEmails.join(", ") 
-                                            : <span className="text-gray-400 italic">Open to all (Public)</span>}
-                                    </p>
+                                    <p className="text-xs text-gray-600 truncate">{exam.allowedEmails && exam.allowedEmails.length > 0 ? exam.allowedEmails.join(", ") : <span className="text-gray-400 italic">Open to all (Public)</span>}</p>
                                 )}
                             </div>
-
-                            <button 
-                                onClick={() => onSelectExam(exam.id)} 
-                                className="w-full py-3 border border-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-50 font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                            >
+                            <button onClick={() => onSelectExam(exam.id)} className="w-full py-3 border border-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-50 font-bold text-sm flex items-center justify-center gap-2 transition-colors">
                                 <Icon name="edit" size={16} /> Manage Questions
                             </button>
                         </div>
@@ -380,8 +291,8 @@
         );
     }
 
-    // --- 2. RESULTS VIEWER (Enhanced) ---
-    function ResultsViewer({ db }) {
+    // --- 2. RESULTS VIEWER (With Reset & Report) ---
+    function ResultsViewer({ db, showNotification }) {
         const [exams, setExams] = React.useState([]);
         const [selectedExam, setSelectedExam] = React.useState(null);
         const [sessions, setSessions] = React.useState([]);
@@ -412,6 +323,15 @@
             setLoading(false);
         };
 
+        const resetAttempt = async (sessionId) => {
+            if(!confirm("Are you sure? This will delete the student's exam record and allow them to take it again.")) return;
+            try {
+                await deleteDoc(doc(db, "sessions", sessionId));
+                setSessions(prev => prev.filter(s => s.id !== sessionId));
+                showNotification("Attempt reset successfully.");
+            } catch(e) { showNotification("Error resetting.", "error"); }
+        };
+
         const calculateScore = (session) => {
             if (!session.answers || questions.length === 0) return 0;
             let score = 0;
@@ -426,11 +346,6 @@
             return Math.round((score / questions.length) * 100);
         };
 
-        const formatOptions = (indices) => {
-            if (!indices || indices.length === 0) return "-";
-            return indices.map(i => String.fromCharCode(65 + parseInt(i))).join(', ');
-        };
-
         const getFullReport = (session) => {
             return questions.map((q, idx) => {
                 const studentAns = session.answers ? session.answers[q.id] : null;
@@ -439,7 +354,6 @@
                 const s1 = [...studentSel].sort().join(',');
                 const s2 = [...correctSel].sort().join(',');
                 const isCorrect = s1 === s2;
-
                 return {
                     id: q.id,
                     qNum: idx + 1,
@@ -454,11 +368,6 @@
             });
         };
 
-        const toggleDetails = (id) => {
-            if (expandedSessionId === id) setExpandedSessionId(null);
-            else setExpandedSessionId(id);
-        };
-
         return (
             <div className="flex flex-col h-full max-w-6xl mx-auto">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
@@ -471,7 +380,6 @@
 
                 <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
                     {loading && <div className="text-center text-gray-400 py-12 flex flex-col items-center"><div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>Fetching Data...</div>}
-                    
                     {!loading && selectedExam && (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
@@ -486,7 +394,7 @@
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {sessions.length === 0 ? (
-                                        <tr><td colSpan="5" className="p-8 text-center text-gray-400">No student submissions yet.</td></tr>
+                                        <tr><td colSpan="5" className="p-8 text-center text-gray-400">No student sessions found.</td></tr>
                                     ) : (
                                         sessions.map(sess => {
                                             const score = calculateScore(sess);
@@ -496,12 +404,12 @@
                                                     <tr className={`transition-colors ${isExpanded ? 'bg-indigo-50/50' : 'hover:bg-gray-50'}`}>
                                                         <td className="p-5 font-bold text-gray-800">{sess.studentName}</td>
                                                         <td className="p-5 text-gray-500 text-sm">{sess.studentEmail}</td>
-                                                        <td className="p-5">
-                                                            <button 
-                                                                onClick={() => toggleDetails(sess.id)}
-                                                                className={`text-xs font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all ${isExpanded ? 'bg-white text-gray-700 shadow-sm ring-1 ring-gray-200' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}
-                                                            >
-                                                                {isExpanded ? 'Close Report' : 'Review'} <Icon name="eye" size={14} />
+                                                        <td className="p-5 flex gap-2">
+                                                            <button onClick={() => setExpandedSessionId(isExpanded ? null : sess.id)} className={`text-xs font-bold py-2 px-3 rounded-lg flex items-center gap-1 transition-all ${isExpanded ? 'bg-white text-gray-700 shadow-sm ring-1 ring-gray-200' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}>
+                                                                {isExpanded ? 'Hide' : 'Review'} <Icon name="eye" size={12} />
+                                                            </button>
+                                                            <button onClick={() => resetAttempt(sess.id)} className="text-xs font-bold py-2 px-3 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 flex items-center gap-1" title="Reset Exam Attempt">
+                                                                <Icon name="refresh" size={12} /> Reset
                                                             </button>
                                                         </td>
                                                         <td className="p-5">
@@ -517,7 +425,6 @@
                                                                 <div className="bg-gray-50/80 p-8 border-b border-gray-100 shadow-inner">
                                                                     <div className="max-w-4xl mx-auto space-y-6">
                                                                         <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6 border-b border-gray-200 pb-2">Full Performance Report</h4>
-                                                                        
                                                                         {getFullReport(sess).map((item) => (
                                                                             <div key={item.id} className={`p-6 rounded-xl border bg-white shadow-sm ${item.isCorrect ? 'border-emerald-100 ring-1 ring-emerald-50' : 'border-rose-100 ring-1 ring-rose-50'}`}>
                                                                                 <div className="flex justify-between items-start mb-4">
@@ -530,13 +437,11 @@
                                                                                         : <span className="text-xs font-bold bg-rose-100 text-rose-700 px-3 py-1 rounded-full flex items-center gap-1 shrink-0"><Icon name="xCircle" size={12} /> Incorrect</span>
                                                                                     }
                                                                                 </div>
-                                                                                
                                                                                 <div className="ml-12 grid grid-cols-1 gap-3">
                                                                                     {item.options.map((opt, optIdx) => {
                                                                                         const isStudent = item.studentIndices.includes(optIdx);
                                                                                         const isKey = item.correctIndices.includes(optIdx);
                                                                                         let cardClass = "bg-white border-gray-100 text-gray-500";
-                                                                                        
                                                                                         if (isKey) cardClass = "bg-emerald-50 border-emerald-200 text-gray-800 ring-1 ring-emerald-100";
                                                                                         else if (isStudent && !isKey) cardClass = "bg-rose-50 border-rose-200 text-gray-800 ring-1 ring-rose-100";
                                                                                         
@@ -552,12 +457,7 @@
                                                                                         );
                                                                                     })}
                                                                                 </div>
-                                                                                
-                                                                                {item.rationale && (
-                                                                                    <div className="ml-12 mt-4 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                                                                        <span className="font-bold text-gray-800 block mb-1">Rationale:</span> {item.rationale}
-                                                                                    </div>
-                                                                                )}
+                                                                                {item.rationale && <div className="ml-12 mt-4 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-100"><span className="font-bold text-gray-800 block mb-1">Rationale:</span> {item.rationale}</div>}
                                                                             </div>
                                                                         ))}
                                                                     </div>
@@ -578,72 +478,84 @@
         );
     }
 
-    // --- 3. EDITOR LAYOUT (Combines Add & List) ---
+    // --- 3. REVIEW INBOX (New Feature) ---
+    function ReviewInbox({ db, showNotification }) {
+        const [requests, setRequests] = React.useState([]);
+        
+        React.useEffect(() => {
+            const q = query(collection(db, "review_requests"), orderBy("requestedAt", "desc"));
+            const unsubscribe = onSnapshot(q, (snap) => {
+                const list = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                setRequests(list);
+            });
+            return () => unsubscribe();
+        }, []);
+
+        const handleAction = async (id, status) => {
+            try {
+                await updateDoc(doc(db, "review_requests", id), { status });
+                showNotification(`Request ${status}!`);
+            } catch (e) { showNotification("Error updating status", "error"); }
+        };
+
+        return (
+            <div className="max-w-4xl mx-auto">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                        <h3 className="font-bold text-gray-800">Review Requests</h3>
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">{requests.length} Total</span>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                        {requests.length === 0 && <div className="p-12 text-center text-gray-400">No review requests yet.</div>}
+                        {requests.map(req => (
+                            <div key={req.id} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <h4 className="font-bold text-gray-800">{req.studentName}</h4>
+                                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${req.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{req.status}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-500">Requested review for: <span className="font-medium text-gray-700">{req.examTitle}</span></p>
+                                    <p className="text-xs text-gray-400 mt-1">{req.requestedAt ? new Date(req.requestedAt.seconds * 1000).toLocaleString() : ''}</p>
+                                </div>
+                                {req.status === 'pending' && (
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleAction(req.id, 'denied')} className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">Deny</button>
+                                        <button onClick={() => handleAction(req.id, 'approved')} className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Approve</button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- 4. QUESTION EDITOR ---
     function QuestionEditorLayout({ db, examId, showNotification }) {
-        const [mode, setMode] = React.useState('add'); // 'add' or 'list'
+        const [mode, setMode] = React.useState('add'); 
         const [editingQ, setEditingQ] = React.useState(null);
-
-        const handleEdit = (question) => {
-            setEditingQ(question);
-            setMode('add');
-        };
-
-        const handleCancelEdit = () => {
-            setEditingQ(null);
-            setMode('add'); 
-        };
-
-        const handleSuccess = () => {
-             setEditingQ(null);
-             // Stay on form but cleared
-        };
 
         return (
             <div className="max-w-5xl mx-auto h-full flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                     <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-200 inline-flex">
-                        <button 
-                            onClick={() => { setMode('add'); setEditingQ(null); }}
-                            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'add' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            {editingQ ? 'Edit Question' : 'Add Question'}
-                        </button>
-                        <button 
-                            onClick={() => setMode('list')}
-                            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            Review Bank
-                        </button>
+                        <button onClick={() => { setMode('add'); setEditingQ(null); }} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'add' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>{editingQ ? 'Edit Question' : 'Add Question'}</button>
+                        <button onClick={() => setMode('list')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>Review Bank</button>
                     </div>
-                    <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-xs font-bold border border-indigo-100 shadow-sm">
-                        Editing Exam ID: <span className="font-mono">{examId}</span>
-                    </div>
+                    <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-xs font-bold border border-indigo-100 shadow-sm">Editing Exam ID: <span className="font-mono">{examId}</span></div>
                 </div>
-
                 <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     {mode === 'add' ? (
-                        <AddQuestionForm 
-                            db={db} 
-                            examId={examId} 
-                            showNotification={showNotification}
-                            editingData={editingQ}
-                            onCancel={handleCancelEdit}
-                            onSuccess={handleSuccess}
-                        />
+                        <AddQuestionForm db={db} examId={examId} showNotification={showNotification} editingData={editingQ} onCancel={() => { setEditingQ(null); setMode('add'); }} onSuccess={() => setEditingQ(null)} />
                     ) : (
-                        <QuestionList 
-                            db={db} 
-                            examId={examId} 
-                            showNotification={showNotification} 
-                            onEdit={handleEdit}
-                        />
+                        <QuestionList db={db} examId={examId} showNotification={showNotification} onEdit={(q) => { setEditingQ(q); setMode('add'); }} />
                     )}
                 </div>
             </div>
         );
     }
 
-    // --- 3a. ADD QUESTION FORM (Dynamic Options + Edit Mode) ---
     function AddQuestionForm({ db, examId, showNotification, editingData, onCancel, onSuccess }) {
         const [isSATA, setIsSATA] = React.useState(false);
         const [loading, setLoading] = React.useState(false);
@@ -659,134 +571,47 @@
                 setOptions(editingData.options);
                 setCorrectIndices(editingData.correctIndices || [editingData.correctAnswerIndex]);
                 setIsSATA(editingData.isSATA || false);
-            } else {
-                resetForm();
-            }
+            } else { resetForm(); }
         }, [editingData]);
 
-        const resetForm = () => {
-            setText(''); setRationale(''); setOptions(['', '', '', '']); setCorrectIndices([]); setIsSATA(false);
-        };
-
-        const handleOptionChange = (idx, val) => {
-            const newOpts = [...options];
-            newOpts[idx] = val;
-            setOptions(newOpts);
-        };
-
+        const resetForm = () => { setText(''); setRationale(''); setOptions(['', '', '', '']); setCorrectIndices([]); setIsSATA(false); };
+        const handleOptionChange = (idx, val) => { const newOpts = [...options]; newOpts[idx] = val; setOptions(newOpts); };
         const addOption = () => setOptions([...options, '']);
-
         const removeOption = (idx) => {
-            if (options.length <= 2) {
-                showNotification("Minimum 2 options required.", "error");
-                return;
-            }
+            if (options.length <= 2) { showNotification("Min 2 options required", "error"); return; }
             const newOpts = options.filter((_, i) => i !== idx);
             setOptions(newOpts);
             const newCorrect = correctIndices.filter(i => i !== idx).map(i => (i > idx ? i - 1 : i));
             setCorrectIndices(newCorrect);
         };
-
         const toggleCorrect = (idx) => {
-            if (isSATA) {
-                if (correctIndices.includes(idx)) setCorrectIndices(correctIndices.filter(i => i !== idx));
-                else setCorrectIndices([...correctIndices, idx]);
-            } else {
-                setCorrectIndices([idx]);
-            }
+            if (isSATA) { if (correctIndices.includes(idx)) setCorrectIndices(correctIndices.filter(i => i !== idx)); else setCorrectIndices([...correctIndices, idx]); } else { setCorrectIndices([idx]); }
         };
-
         const handleSubmit = async (e) => {
             e.preventDefault();
-            if (correctIndices.length === 0) { showNotification("Select at least one correct answer.", "error"); return; }
-            if (options.some(o => !o.trim())) { showNotification("Fill out all options.", "error"); return; }
-
+            if (correctIndices.length === 0 || options.some(o => !o.trim())) return;
             setLoading(true);
             try {
-                const data = {
-                    examId, text, options, correctIndices: correctIndices.sort(), isSATA, rationale, 
-                    createdAt: editingData ? editingData.createdAt : serverTimestamp()
-                };
-
-                if (editingData) {
-                    await updateDoc(doc(db, "questions", editingData.id), data);
-                    showNotification("Question updated successfully!");
-                } else {
-                    await addDoc(collection(db, "questions"), data);
-                    showNotification("Question added!");
-                }
-                
-                if (onSuccess) onSuccess();
-                resetForm();
-            } catch (err) { 
-                console.error(err);
-                showNotification("Error saving.", "error"); 
-            } finally { setLoading(false); }
+                const data = { examId, text, options, correctIndices: correctIndices.sort(), isSATA, rationale, createdAt: editingData ? editingData.createdAt : serverTimestamp() };
+                if (editingData) { await updateDoc(doc(db, "questions", editingData.id), data); showNotification("Updated!"); } else { await addDoc(collection(db, "questions"), data); showNotification("Added!"); }
+                if (onSuccess) onSuccess(); resetForm();
+            } catch (err) { showNotification("Error saving.", "error"); } finally { setLoading(false); }
         };
 
         return (
             <div className="p-8 scroller overflow-y-auto h-full relative">
-                {editingData && (
-                    <div className="absolute top-4 right-8 bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 animate-pulse">
-                        EDIT MODE: Updating existing question
-                    </div>
-                )}
-                
+                {editingData && <div className="absolute top-4 right-8 bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 animate-pulse">EDIT MODE</div>}
                 <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-8">
-                    <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                        <input type="checkbox" checked={isSATA} onChange={(e) => { setIsSATA(e.target.checked); setCorrectIndices([]); }} className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500" />
-                        <div>
-                            <span className="block text-sm font-bold text-blue-900">Enable SATA Mode</span>
-                            <span className="text-xs text-blue-600">Select All That Apply - Allows multiple correct answers</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Question Stem</label>
-                        <textarea value={text} onChange={(e) => setText(e.target.value)} required rows="3" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" placeholder="Enter the scenario or question here..." />
-                    </div>
-
-                    <div className="space-y-4">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">Answer Options</label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {options.map((optVal, idx) => (
-                                <div key={idx} className={`relative p-2 pl-3 rounded-xl border flex items-center gap-3 transition-all ${correctIndices.includes(idx) ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-200' : 'border-gray-200 bg-white'}`}>
-                                    <button type="button" onClick={() => toggleCorrect(idx)} className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all ${correctIndices.includes(idx) ? 'bg-emerald-500 text-white border-emerald-600 shadow-md' : 'bg-gray-50 border-gray-300 hover:border-indigo-400'}`}>
-                                        <Icon name="check" size={16} />
-                                    </button>
-                                    
-                                    <input type="text" value={optVal} onChange={(e) => handleOptionChange(idx, e.target.value)} required className="flex-1 p-2 bg-transparent border-b border-transparent focus:border-indigo-500 outline-none font-medium text-sm" placeholder={`Option ${String.fromCharCode(65 + idx)}`} />
-
-                                    <button type="button" onClick={() => removeOption(idx)} className="text-gray-300 hover:text-rose-500 p-2"><Icon name="x" size={16} /></button>
-                                </div>
-                            ))}
-                        </div>
-                        <button type="button" onClick={addOption} className="w-full py-3 border border-dashed border-gray-300 rounded-xl text-gray-500 font-bold text-sm hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2">
-                            <Icon name="plus" size={16} /> Add Another Option
-                        </button>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Clinical Rationale</label>
-                        <textarea value={rationale} onChange={(e) => setRationale(e.target.value)} required rows="2" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" placeholder="Explain the correct answer..." />
-                    </div>
-                    
-                    <div className="pt-4 flex gap-4">
-                        {editingData && (
-                            <button type="button" onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-all">
-                                Cancel Edit
-                            </button>
-                        )}
-                        <button type="submit" disabled={loading} className={`flex-1 bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 hover:shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5 ${editingData ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-200' : ''}`}>
-                            {loading ? 'Saving...' : (editingData ? 'Update Question' : 'Save to Bank')}
-                        </button>
-                    </div>
+                    <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100"><input type="checkbox" checked={isSATA} onChange={(e) => { setIsSATA(e.target.checked); setCorrectIndices([]); }} className="w-5 h-5" /><div><span className="block text-sm font-bold text-blue-900">Enable SATA Mode</span><span className="text-xs text-blue-600">Select All That Apply</span></div></div>
+                    <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Question Stem</label><textarea value={text} onChange={(e) => setText(e.target.value)} required rows="3" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Question..." /></div>
+                    <div className="space-y-4"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">Options</label><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{options.map((optVal, idx) => (<div key={idx} className={`relative p-2 pl-3 rounded-xl border flex items-center gap-3 ${correctIndices.includes(idx) ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}><button type="button" onClick={() => toggleCorrect(idx)} className={`w-8 h-8 rounded-lg border flex items-center justify-center ${correctIndices.includes(idx) ? 'bg-emerald-500 text-white' : 'bg-gray-50'}`}><Icon name="check" size={16} /></button><input type="text" value={optVal} onChange={(e) => handleOptionChange(idx, e.target.value)} required className="flex-1 p-2 bg-transparent border-b border-transparent focus:border-indigo-500 outline-none text-sm" placeholder={`Option ${String.fromCharCode(65 + idx)}`} /><button type="button" onClick={() => removeOption(idx)} className="text-gray-300 hover:text-rose-500 p-2"><Icon name="x" size={16} /></button></div>))}</div><button type="button" onClick={addOption} className="w-full py-3 border border-dashed border-gray-300 rounded-xl text-gray-500 font-bold text-sm hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center gap-2"><Icon name="plus" size={16} /> Add Option</button></div>
+                    <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Rationale</label><textarea value={rationale} onChange={(e) => setRationale(e.target.value)} required rows="2" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Rationale..." /></div>
+                    <div className="pt-4 flex gap-4">{editingData && <button type="button" onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-xl font-bold">Cancel</button>}<button type="submit" disabled={loading} className={`flex-1 bg-indigo-600 text-white py-4 rounded-xl font-bold ${editingData ? 'bg-amber-600' : ''}`}>{loading ? 'Saving...' : (editingData ? 'Update' : 'Save')}</button></div>
                 </form>
             </div>
         );
     }
 
-    // --- 4. QUESTION LIST (With Edit Action) ---
     function QuestionList({ db, examId, showNotification, onEdit }) {
         const [questions, setQuestions] = React.useState([]);
         React.useEffect(() => {
@@ -798,55 +623,10 @@
             });
             return () => unsubscribe();
         }, [examId]);
-        const handleDelete = async (id) => { if(confirm("Delete this question?")) await deleteDoc(doc(db, "questions", id)); };
-
-        if (questions.length === 0) return <div className="p-12 text-center text-gray-400 flex flex-col items-center"><Icon name="book" size={48} className="mb-4 text-gray-200" />No questions in this exam yet.</div>;
-
+        const handleDelete = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "questions", id)); };
+        if (questions.length === 0) return <div className="p-12 text-center text-gray-400">No questions yet.</div>;
         return (
-            <div className="h-full overflow-y-auto scroller">
-                <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-50 sticky top-0 text-xs font-bold text-gray-500 uppercase">
-                        <tr>
-                            <th className="p-4 border-b">Type</th>
-                            <th className="p-4 border-b">Question Stem</th>
-                            <th className="p-4 border-b w-32 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {questions.map(q => (
-                            <tr key={q.id} className="hover:bg-gray-50 group transition-colors">
-                                <td className="p-4 align-top w-24">
-                                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${q.isSATA ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                                        {q.isSATA ? 'SATA' : 'Single'}
-                                    </span>
-                                </td>
-                                <td className="p-4 align-top">
-                                    <p className="font-medium text-gray-800 line-clamp-2 mb-1">{q.text}</p>
-                                    <p className="text-xs text-gray-400 line-clamp-1 italic">{q.rationale}</p>
-                                </td>
-                                <td className="p-4 text-right align-top">
-                                    <div className="flex justify-end gap-2">
-                                        <button 
-                                            onClick={() => onEdit(q)} 
-                                            className="p-2 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                            title="Edit Question"
-                                        >
-                                            <Icon name="pencil" size={18} />
-                                        </button>
-                                        <button 
-                                            onClick={() => handleDelete(q.id)} 
-                                            className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                                            title="Delete Question"
-                                        >
-                                            <Icon name="trash" size={18} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <div className="h-full overflow-y-auto scroller"><table className="w-full text-left border-collapse"><thead className="bg-gray-50 sticky top-0 text-xs font-bold text-gray-500 uppercase"><tr><th className="p-4 border-b">Type</th><th className="p-4 border-b">Question</th><th className="p-4 border-b text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-100">{questions.map(q => (<tr key={q.id} className="hover:bg-gray-50"><td className="p-4 w-24"><span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase ${q.isSATA ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{q.isSATA ? 'SATA' : 'Single'}</span></td><td className="p-4"><p className="font-medium text-gray-800 line-clamp-2">{q.text}</p></td><td className="p-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => onEdit(q)} className="p-2 text-indigo-400 hover:bg-indigo-50 rounded-lg"><Icon name="pencil" size={18} /></button><button onClick={() => handleDelete(q.id)} className="p-2 text-gray-300 hover:text-rose-500 rounded-lg"><Icon name="trash" size={18} /></button></div></td></tr>))}</tbody></table></div>
         );
     }
 
