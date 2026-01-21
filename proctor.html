@@ -27,6 +27,22 @@
         .scroller::-webkit-scrollbar-track { background: transparent; }
         .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .scroller::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-dropdown { animation: fadeInScale 0.15s ease-out forwards; }
+        
+        .modal-overlay {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .login-gradient {
+            background: radial-gradient(circle at top right, #4f46e5, transparent),
+                        radial-gradient(circle at bottom left, #0f172a, #1e293b);
+        }
     </style>
 </head>
 <body>
@@ -35,6 +51,9 @@
 
 <script type="text/babel" data-type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { 
+        getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { 
         getFirestore, collection, addDoc, onSnapshot, 
         deleteDoc, updateDoc, doc, serverTimestamp, query, orderBy, where, getDocs 
@@ -51,6 +70,7 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
 
     // --- Icon Component ---
@@ -69,29 +89,160 @@
             plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
             eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
             pencil: <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />,
+            archive: <><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></>,
+            unarchive: <><path d="M3 8v13h18V8"/><path d="M1 3h22v5H1z"/><path d="M10 12l2-2 2 2"/><path d="M12 10v6"/></>,
+            alert: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>,
             x: <path d="M18 6L6 18M6 6l12 12" />,
+            rotate: <path d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />,
+            chevronDown: <polyline points="6 9 12 15 18 9" />,
+            logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
+            lock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+            mail: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>,
             book: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>
         };
         return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{icons[name] || icons.layout}</svg>;
     };
 
+    // --- Components ---
+
+    const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Confirm", type = "danger" }) => {
+        if (!isOpen) return null;
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-overlay">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-dropdown">
+                    <div className="p-6">
+                        <div className={`w-12 h-12 rounded-full mb-4 flex items-center justify-center ${type === 'danger' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
+                            <Icon name="alert" size={24} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+                        <p className="text-gray-500 text-sm leading-relaxed">{message}</p>
+                    </div>
+                    <div className="bg-gray-50 p-4 flex gap-3">
+                        <button onClick={onCancel} className="flex-1 px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-xl transition-all font-sans">Cancel</button>
+                        <button onClick={onConfirm} className={`flex-1 px-4 py-2 text-sm font-bold text-white rounded-xl transition-all shadow-lg font-sans ${type === 'danger' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'}`}>
+                            {confirmText}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const NavButton = ({ isActive, onClick, icon, label }) => (
+        <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 translate-x-1' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}>
+            <Icon name={icon} className={isActive ? 'text-white' : 'text-gray-500 group-hover:text-white'} />
+            <span className="hidden md:block font-medium">{label}</span>
+        </button>
+    );
+
+    function LoginPage({ onLogin, showNotification }) {
+        const [email, setEmail] = React.useState('');
+        const [password, setPassword] = React.useState('');
+        const [loading, setLoading] = React.useState(false);
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showNotification("Logged in successfully!");
+            } catch (err) {
+                showNotification(err.message, "error");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        return (
+            <div className="min-h-screen login-gradient flex items-center justify-center p-6">
+                <div className="max-w-md w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2.5rem] p-10 shadow-2xl animate-dropdown">
+                    <div className="text-center mb-10">
+                        <div className="w-16 h-16 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/50 mx-auto mb-6">
+                            <Icon name="layout" size={32} className="text-white" />
+                        </div>
+                        <h1 className="text-3xl font-extrabold text-white mb-2">Proctor<span className="text-indigo-400">Live</span></h1>
+                        <p className="text-gray-400 text-sm font-medium tracking-wide uppercase">Instructor Suite Entry</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-300 uppercase tracking-widest ml-1">Email Address</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-indigo-400 transition-colors">
+                                    <Icon name="mail" size={18} />
+                                </div>
+                                <input 
+                                    type="email" 
+                                    required 
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white/10 transition-all font-sans" 
+                                    placeholder="instructor@proctorlive.com"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-300 uppercase tracking-widest ml-1">Secure Password</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-indigo-400 transition-colors">
+                                    <Icon name="lock" size={18} />
+                                </div>
+                                <input 
+                                    type="password" 
+                                    required 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white/10 transition-all font-sans" 
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
+
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-indigo-900/50 flex items-center justify-center gap-3 disabled:bg-gray-700"
+                        >
+                            {loading ? 'Authenticating...' : 'Sign In'}
+                        </button>
+                    </form>
+
+                    <div className="mt-8 pt-8 border-t border-white/5 text-center">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secure Access Only</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     function App() {
-        const [activeTab, setActiveTab] = React.useState('exams'); // exams, results, reviews, editor
+        const [user, setUser] = React.useState(null);
+        const [authLoading, setAuthLoading] = React.useState(true);
+        const [activeTab, setActiveTab] = React.useState('exams'); 
         const [selectedExamId, setSelectedExamId] = React.useState(null);
         const [notification, setNotification] = React.useState(null);
         const [pendingCount, setPendingCount] = React.useState(0);
-
-        // Listen for global pending count for review requests
-        React.useEffect(() => {
-            const q = query(collection(db, "review_requests"), where("status", "==", "pending"));
-            const unsubscribe = onSnapshot(q, (snap) => setPendingCount(snap.size));
-            return () => unsubscribe();
-        }, []);
 
         const showNotification = (msg, type = 'success') => {
             setNotification({ msg, type });
             setTimeout(() => setNotification(null), 3000);
         };
+
+        React.useEffect(() => {
+            const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+                setUser(authUser);
+                setAuthLoading(false);
+            });
+            return () => unsubscribe();
+        }, []);
+
+        React.useEffect(() => {
+            if (!user) return;
+            const q = query(collection(db, "review_requests"), where("status", "==", "pending"));
+            const unsubscribe = onSnapshot(q, (snap) => setPendingCount(snap.size));
+            return () => unsubscribe();
+        }, [user]);
 
         const handleTabChange = (tab) => {
             if (tab === 'editor' && !selectedExamId) {
@@ -101,6 +252,19 @@
             }
             setActiveTab(tab);
         };
+
+        const handleSignOut = async () => {
+            await signOut(auth);
+            showNotification("Logged out successfully.");
+        };
+
+        if (authLoading) return (
+            <div className="h-screen bg-[#0F172A] flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            </div>
+        );
+
+        if (!user) return <LoginPage showNotification={showNotification} />;
 
         return (
             <div className="flex h-screen bg-[#F1F5F9]">
@@ -134,18 +298,23 @@
                         <NavButton isActive={activeTab === 'editor'} onClick={() => handleTabChange('editor')} icon="edit" label="Question Editor" />
                     </nav>
 
-                    <div className="p-4 border-t border-gray-800">
-                        {selectedExamId ? (
+                    <div className="p-4 border-t border-gray-800 space-y-4">
+                        {selectedExamId && (
                             <div className="bg-indigo-900/50 p-3 rounded-xl border border-indigo-500/30">
-                                <p className="text-[10px] text-indigo-300 font-bold uppercase mb-1">Active Context</p>
+                                <p className="text-[10px] text-indigo-300 font-bold uppercase mb-1 tracking-widest">Active Exam</p>
                                 <div className="flex items-center gap-2 text-indigo-100 font-mono text-xs truncate">
-                                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
-                                    Exam Selected
+                                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                                    {selectedExamId.substring(0, 10)}...
                                 </div>
                             </div>
-                        ) : (
-                            <div className="text-center text-xs text-gray-500 italic hidden md:block">No Exam Selected</div>
                         )}
+                        <button 
+                            onClick={handleSignOut}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-gray-500 hover:bg-rose-900/20 hover:text-rose-400 group"
+                        >
+                            <Icon name="logout" className="group-hover:text-rose-400" />
+                            <span className="hidden md:block font-medium">Sign Out</span>
+                        </button>
                     </div>
                 </aside>
 
@@ -161,40 +330,38 @@
                     </header>
 
                     {notification && (
-                        <div className={`absolute top-20 right-8 z-50 px-6 py-4 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 animate-bounce ${notification.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`}>
+                        <div className={`absolute top-20 right-8 z-50 px-6 py-4 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 animate-dropdown ${notification.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                             <Icon name={notification.type === 'success' ? 'check' : 'xCircle'} />
                             {notification.msg}
                         </div>
                     )}
 
                     <div className="flex-1 overflow-y-auto scroller p-8">
-                        {activeTab === 'exams' && <ExamManager db={db} showNotification={showNotification} onSelectExam={(id) => { setSelectedExamId(id); setActiveTab('editor'); }} selectedId={selectedExamId} />}
-                        {activeTab === 'results' && <ResultsViewer db={db} showNotification={showNotification} />}
-                        {activeTab === 'reviews' && <ReviewInbox db={db} showNotification={showNotification} />}
-                        {activeTab === 'editor' && <QuestionEditorLayout db={db} examId={selectedExamId} showNotification={showNotification} />}
+                        {activeTab === 'exams' && <ExamManager db={db} user={user} showNotification={showNotification} onSelectExam={(id) => { setSelectedExamId(id); setActiveTab('editor'); }} selectedId={selectedExamId} />}
+                        {activeTab === 'results' && <ResultsViewer db={db} user={user} showNotification={showNotification} />}
+                        {activeTab === 'reviews' && <ReviewInbox db={db} user={user} showNotification={showNotification} />}
+                        {activeTab === 'editor' && <QuestionEditorLayout db={db} user={user} examId={selectedExamId} showNotification={showNotification} />}
                     </div>
                 </main>
             </div>
         );
     }
 
-    const NavButton = ({ isActive, onClick, icon, label }) => (
-        <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 translate-x-1' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}>
-            <Icon name={icon} className={isActive ? 'text-white' : 'text-gray-500 group-hover:text-white'} />
-            <span className="hidden md:block font-medium">{label}</span>
-        </button>
-    );
+    // --- Sub-Components (Exams, Results, Reviews, Editor) ---
+    // All components updated to require user state for Firestore operations
 
-    // --- 1. EXAM MANAGER ---
-    function ExamManager({ db, showNotification, onSelectExam, selectedId }) {
+    function ExamManager({ db, user, showNotification, onSelectExam, selectedId }) {
         const [exams, setExams] = React.useState([]);
+        const [view, setView] = React.useState('active');
         const [newExamTitle, setNewExamTitle] = React.useState("");
         const [timeLimit, setTimeLimit] = React.useState(60);
         const [creating, setCreating] = React.useState(false);
         const [editingAccess, setEditingAccess] = React.useState(null); 
         const [accessText, setAccessText] = React.useState("");
+        const [confirmModal, setConfirmModal] = React.useState({ isOpen: false, id: null, type: null });
 
         React.useEffect(() => {
+            if (!user) return;
             const q = query(collection(db, "exams"));
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const fetchedExams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -202,7 +369,7 @@
                 setExams(fetchedExams);
             });
             return () => unsubscribe();
-        }, []);
+        }, [user]);
 
         const handleCreate = async (e) => {
             e.preventDefault();
@@ -214,11 +381,28 @@
                     timeLimit: parseInt(timeLimit),
                     createdAt: serverTimestamp(),
                     allowedEmails: [],
+                    isArchived: false,
                     status: 'open'
                 });
                 showNotification("Exam created successfully!");
                 setNewExamTitle("");
-            } catch (err) { showNotification("Error: " + err.message, "error"); } finally { setCreating(false); }
+            } catch (err) { showNotification(err.message, "error"); } finally { setCreating(false); }
+        };
+
+        const toggleArchive = async (id, currentArchiveState) => {
+            try {
+                await updateDoc(doc(db, "exams", id), { isArchived: !currentArchiveState });
+                showNotification(currentArchiveState ? "Exam unarchived" : "Exam archived");
+                setConfirmModal({ isOpen: false, id: null, type: null });
+            } catch (err) { showNotification("Failed to update status", "error"); }
+        };
+
+        const deleteExam = async (id) => {
+            try {
+                await deleteDoc(doc(db, "exams", id));
+                showNotification("Exam deleted permanently");
+                setConfirmModal({ isOpen: false, id: null, type: null });
+            } catch (err) { showNotification("Delete failed", "error"); }
         };
 
         const saveAccessList = async (examId) => {
@@ -230,6 +414,8 @@
             } catch (err) { showNotification("Update failed", "error"); }
         };
 
+        const filteredExams = exams.filter(e => view === 'active' ? !e.isArchived : e.isArchived);
+
         return (
             <div className="max-w-6xl mx-auto">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
@@ -237,11 +423,11 @@
                     <form onSubmit={handleCreate} className="flex flex-col md:flex-row gap-4 items-end">
                         <div className="flex-1 w-full">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Exam Title</label>
-                            <input type="text" value={newExamTitle} onChange={(e) => setNewExamTitle(e.target.value)} placeholder="e.g. 'Final Cardiology Review'" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" required />
+                            <input type="text" value={newExamTitle} onChange={(e) => setNewExamTitle(e.target.value)} placeholder="Final Exam 2024" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" required />
                         </div>
                         <div className="w-full md:w-32">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Time (Min)</label>
-                            <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" required min="1" />
+                            <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm font-sans" required min="1" />
                         </div>
                         <button type="submit" disabled={creating} className="w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-indigo-200 disabled:bg-gray-300">
                             {creating ? 'Creating...' : 'Create Exam'}
@@ -249,36 +435,50 @@
                     </form>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {exams.map(exam => (
+                <div className="flex items-center gap-1 mb-6 bg-white p-1 rounded-xl border border-gray-100 w-fit shadow-sm">
+                    <button onClick={() => setView('active')} className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${view === 'active' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>Active Exams</button>
+                    <button onClick={() => setView('archived')} className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${view === 'archived' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>Archived</button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+                    {filteredExams.length === 0 && (
+                        <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-gray-200 text-gray-400 italic">
+                            No {view} exams found.
+                        </div>
+                    )}
+                    {filteredExams.map(exam => (
                         <div key={exam.id} className={`group bg-white rounded-2xl p-6 border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${selectedId === exam.id ? 'border-indigo-500 ring-2 ring-indigo-100 shadow-lg' : 'border-gray-100 shadow-sm'}`}>
                             <div className="flex justify-between items-start mb-4">
-                                <div>
+                                <div className="flex-1">
                                     <h3 className="font-bold text-xl text-gray-800 mb-1">{exam.title}</h3>
                                     <div className="flex items-center gap-3 text-xs font-medium text-gray-500">
-                                        <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md"><Icon name="clock" size={12} /> {exam.timeLimit || 60} mins</span>
-                                        <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md text-gray-400">ID: {exam.id.substring(0,6)}...</span>
+                                        <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md font-sans"><Icon name="clock" size={12} /> {exam.timeLimit || 60} mins</span>
+                                        <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md text-gray-400 font-mono">ID: {exam.id.substring(0,6)}...</span>
                                     </div>
                                 </div>
-                                <button onClick={() => onSelectExam(exam.id)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${selectedId === exam.id ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
-                                    {selectedId === exam.id ? 'Active' : 'Select'}
-                                </button>
+                                <div className="flex gap-2 shrink-0">
+                                    <button onClick={() => setConfirmModal({ isOpen: true, id: exam.id, type: exam.isArchived ? 'unarchive' : 'archive' })} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"><Icon name={exam.isArchived ? "unarchive" : "archive"} size={18} /></button>
+                                    <button onClick={() => setConfirmModal({ isOpen: true, id: exam.id, type: 'delete' })} className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Icon name="trash" size={18} /></button>
+                                    <button onClick={() => onSelectExam(exam.id)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${selectedId === exam.id ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
+                                        {selectedId === exam.id ? 'Active' : 'Select'}
+                                    </button>
+                                </div>
                             </div>
                             <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 mb-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1"><Icon name="users" size={12} /> Allowed Students</span>
-                                    {editingAccess !== exam.id && <button onClick={() => { setEditingAccess(exam.id); setAccessText((exam.allowedEmails || []).join(', ')); }} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Edit List</button>}
+                                    {!editingAccess && <button onClick={() => { setEditingAccess(exam.id); setAccessText((exam.allowedEmails || []).join(', ')); }} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Edit</button>}
                                 </div>
                                 {editingAccess === exam.id ? (
-                                    <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
-                                        <textarea value={accessText} onChange={(e) => setAccessText(e.target.value)} className="w-full text-xs p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" rows="3" placeholder="student1@email.com, student2@email.com" />
+                                    <div className="space-y-2">
+                                        <textarea value={accessText} onChange={(e) => setAccessText(e.target.value)} className="w-full text-xs p-2 border rounded-lg outline-none font-sans" rows="3" placeholder="student@email.com, ..." />
                                         <div className="flex gap-2 justify-end">
-                                            <button onClick={() => setEditingAccess(null)} className="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
-                                            <button onClick={() => saveAccessList(exam.id)} className="text-xs bg-emerald-500 text-white px-3 py-1 rounded-md hover:bg-emerald-600">Save</button>
+                                            <button onClick={() => setEditingAccess(null)} className="text-xs text-gray-500 font-bold">Cancel</button>
+                                            <button onClick={() => saveAccessList(exam.id)} className="text-xs bg-emerald-500 text-white px-3 py-1 rounded-md hover:bg-emerald-600 font-bold">Save</button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-gray-600 truncate">{exam.allowedEmails && exam.allowedEmails.length > 0 ? exam.allowedEmails.join(", ") : <span className="text-gray-400 italic">Open to all (Public)</span>}</p>
+                                    <p className="text-xs text-gray-600 truncate">{exam.allowedEmails?.length > 0 ? exam.allowedEmails.join(", ") : "Open (Public)"}</p>
                                 )}
                             </div>
                             <button onClick={() => onSelectExam(exam.id)} className="w-full py-3 border border-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-50 font-bold text-sm flex items-center justify-center gap-2 transition-colors">
@@ -287,25 +487,34 @@
                         </div>
                     ))}
                 </div>
+
+                <ConfirmModal 
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.type === 'delete' ? 'Delete Exam?' : 'Update Status?'}
+                    message={confirmModal.type === 'delete' ? 'Permanent removal of exam and all questions.' : 'This will move the exam to ' + (confirmModal.type === 'archive' ? 'Archived.' : 'Active.')}
+                    confirmText={confirmModal.type === 'delete' ? 'Delete' : 'Confirm'}
+                    onConfirm={() => confirmModal.type === 'delete' ? deleteExam(confirmModal.id) : toggleArchive(confirmModal.id, confirmModal.type === 'unarchive')}
+                    onCancel={() => setConfirmModal({ isOpen: false, id: null, type: null })}
+                />
             </div>
         );
     }
 
-    // --- 2. RESULTS VIEWER (With Reset & Report) ---
-    function ResultsViewer({ db, showNotification }) {
+    function ResultsViewer({ db, user, showNotification }) {
         const [exams, setExams] = React.useState([]);
         const [selectedExam, setSelectedExam] = React.useState(null);
         const [sessions, setSessions] = React.useState([]);
         const [questions, setQuestions] = React.useState([]);
         const [loading, setLoading] = React.useState(false);
         const [expandedSessionId, setExpandedSessionId] = React.useState(null);
+        const [confirmReset, setConfirmReset] = React.useState({ isOpen: false, id: null });
 
         React.useEffect(() => {
-            getDocs(collection(db, "exams")).then(snap => setExams(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-        }, []);
+            if (user) getDocs(collection(db, "exams")).then(snap => setExams(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+        }, [user]);
 
         const loadResults = async (examId) => {
-            if (!examId) return;
+            if (!examId || !user) return;
             setLoading(true);
             setExpandedSessionId(null);
             const ex = exams.find(e => e.id === examId);
@@ -324,12 +533,12 @@
         };
 
         const resetAttempt = async (sessionId) => {
-            if(!confirm("Are you sure? This will delete the student's exam record and allow them to take it again.")) return;
             try {
                 await deleteDoc(doc(db, "sessions", sessionId));
                 setSessions(prev => prev.filter(s => s.id !== sessionId));
-                showNotification("Attempt reset successfully.");
-            } catch(e) { showNotification("Error resetting.", "error"); }
+                showNotification("Attempt reset.");
+                setConfirmReset({ isOpen: false, id: null });
+            } catch(e) { showNotification("Reset failed.", "error"); }
         };
 
         const calculateScore = (session) => {
@@ -351,9 +560,6 @@
                 const studentAns = session.answers ? session.answers[q.id] : null;
                 const studentSel = studentAns ? (studentAns.selectedOptions || []) : [];
                 const correctSel = q.correctIndices || [q.correctAnswerIndex];
-                const s1 = [...studentSel].sort().join(',');
-                const s2 = [...correctSel].sort().join(',');
-                const isCorrect = s1 === s2;
                 return {
                     id: q.id,
                     qNum: idx + 1,
@@ -361,8 +567,7 @@
                     options: q.options || [],
                     studentIndices: studentSel,
                     correctIndices: correctSel,
-                    isSATA: q.isSATA,
-                    isCorrect: isCorrect,
+                    isCorrect: [...studentSel].sort().join(',') === [...correctSel].sort().join(','),
                     rationale: q.rationale
                 };
             });
@@ -371,158 +576,126 @@
         return (
             <div className="flex flex-col h-full max-w-6xl mx-auto">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Select Exam to Grade</label>
-                    <select onChange={(e) => loadResults(e.target.value)} className="w-full max-w-md p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Select Exam</label>
+                    <select onChange={(e) => loadResults(e.target.value)} className="w-full max-w-md p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm font-sans">
                         <option value="">-- Choose Exam --</option>
                         {exams.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
                     </select>
                 </div>
 
                 <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                    {loading && <div className="text-center text-gray-400 py-12 flex flex-col items-center"><div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>Fetching Data...</div>}
-                    {!loading && selectedExam && (
+                    {loading ? <div className="p-20 text-center"><div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div></div> : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
-                                <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
+                                <thead className="bg-gray-50 text-gray-500 text-[10px] font-bold uppercase tracking-widest border-b">
                                     <tr>
                                         <th className="p-5">Student</th>
                                         <th className="p-5">Email</th>
-                                        <th className="p-5 w-40">Actions</th>
                                         <th className="p-5">Status</th>
                                         <th className="p-5 text-right">Score</th>
+                                        <th className="p-5 w-40">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {sessions.length === 0 ? (
-                                        <tr><td colSpan="5" className="p-8 text-center text-gray-400">No student sessions found.</td></tr>
-                                    ) : (
-                                        sessions.map(sess => {
-                                            const score = calculateScore(sess);
-                                            const isExpanded = expandedSessionId === sess.id;
-                                            return (
-                                                <React.Fragment key={sess.id}>
-                                                    <tr className={`transition-colors ${isExpanded ? 'bg-indigo-50/50' : 'hover:bg-gray-50'}`}>
-                                                        <td className="p-5 font-bold text-gray-800">{sess.studentName}</td>
-                                                        <td className="p-5 text-gray-500 text-sm">{sess.studentEmail}</td>
-                                                        <td className="p-5 flex gap-2">
-                                                            <button onClick={() => setExpandedSessionId(isExpanded ? null : sess.id)} className={`text-xs font-bold py-2 px-3 rounded-lg flex items-center gap-1 transition-all ${isExpanded ? 'bg-white text-gray-700 shadow-sm ring-1 ring-gray-200' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}>
-                                                                {isExpanded ? 'Hide' : 'Review'} <Icon name="eye" size={12} />
-                                                            </button>
-                                                            <button onClick={() => resetAttempt(sess.id)} className="text-xs font-bold py-2 px-3 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 flex items-center gap-1" title="Reset Exam Attempt">
-                                                                <Icon name="refresh" size={12} /> Reset
-                                                            </button>
-                                                        </td>
-                                                        <td className="p-5">
-                                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${sess.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                                {sess.status ? sess.status : 'ACTIVE'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-5 text-right font-bold text-lg text-gray-800">{questions.length > 0 ? `${score}%` : '-'}</td>
-                                                    </tr>
-                                                    {isExpanded && (
-                                                        <tr>
-                                                            <td colSpan="5" className="p-0">
-                                                                <div className="bg-gray-50/80 p-8 border-b border-gray-100 shadow-inner">
-                                                                    <div className="max-w-4xl mx-auto space-y-6">
-                                                                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6 border-b border-gray-200 pb-2">Full Performance Report</h4>
-                                                                        {getFullReport(sess).map((item) => (
-                                                                            <div key={item.id} className={`p-6 rounded-xl border bg-white shadow-sm ${item.isCorrect ? 'border-emerald-100 ring-1 ring-emerald-50' : 'border-rose-100 ring-1 ring-rose-50'}`}>
-                                                                                <div className="flex justify-between items-start mb-4">
-                                                                                    <div className="flex gap-4">
-                                                                                        <span className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold shrink-0 ${item.isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>Q{item.qNum}</span>
-                                                                                        <p className="text-gray-800 font-medium text-lg leading-relaxed">{item.text}</p>
-                                                                                    </div>
-                                                                                    {item.isCorrect 
-                                                                                        ? <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full flex items-center gap-1 shrink-0"><Icon name="check" size={12} /> Correct</span>
-                                                                                        : <span className="text-xs font-bold bg-rose-100 text-rose-700 px-3 py-1 rounded-full flex items-center gap-1 shrink-0"><Icon name="xCircle" size={12} /> Incorrect</span>
-                                                                                    }
+                                <tbody className="divide-y">
+                                    {sessions.map(sess => (
+                                        <React.Fragment key={sess.id}>
+                                            <tr className="hover:bg-gray-50 transition-colors">
+                                                <td className="p-5 font-bold text-gray-800">{sess.studentName}</td>
+                                                <td className="p-5 text-gray-500 text-sm font-sans">{sess.studentEmail}</td>
+                                                <td className="p-5"><span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-blue-50 text-blue-600">{sess.status || 'Active'}</span></td>
+                                                <td className="p-5 text-right font-bold text-lg font-sans">{calculateScore(sess)}%</td>
+                                                <td className="p-5 flex gap-2">
+                                                    <button onClick={() => setExpandedSessionId(expandedSessionId === sess.id ? null : sess.id)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100"><Icon name="eye" size={16} /></button>
+                                                    <button onClick={() => setConfirmReset({ isOpen: true, id: sess.id })} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100"><Icon name="refresh" size={16} /></button>
+                                                </td>
+                                            </tr>
+                                            {expandedSessionId === sess.id && (
+                                                <tr>
+                                                    <td colSpan="5" className="p-8 bg-gray-50 shadow-inner">
+                                                        <div className="max-w-4xl mx-auto space-y-6">
+                                                            {getFullReport(sess).map(item => (
+                                                                <div key={item.id} className="p-6 bg-white rounded-2xl border shadow-sm">
+                                                                    <div className="flex justify-between mb-4">
+                                                                        <span className="font-bold text-indigo-600">Q{item.qNum}</span>
+                                                                        <span className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full ${item.isCorrect ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{item.isCorrect ? 'Correct' : 'Incorrect'}</span>
+                                                                    </div>
+                                                                    <p className="font-medium text-gray-800 mb-4">{item.text}</p>
+                                                                    <div className="space-y-2">
+                                                                        {item.options.map((opt, i) => (
+                                                                            <div key={i} className={`p-3 rounded-xl border flex justify-between text-sm ${item.correctIndices.includes(i) ? 'bg-emerald-50 border-emerald-200' : (item.studentIndices.includes(i) ? 'bg-rose-50 border-rose-200' : 'bg-gray-50 border-gray-100')}`}>
+                                                                                <span>{opt}</span>
+                                                                                <div className="flex gap-2">
+                                                                                    {item.studentIndices.includes(i) && <span className="text-[9px] font-bold text-gray-400">Selected</span>}
+                                                                                    {item.correctIndices.includes(i) && <Icon name="check" size={14} className="text-emerald-600" />}
                                                                                 </div>
-                                                                                <div className="ml-12 grid grid-cols-1 gap-3">
-                                                                                    {item.options.map((opt, optIdx) => {
-                                                                                        const isStudent = item.studentIndices.includes(optIdx);
-                                                                                        const isKey = item.correctIndices.includes(optIdx);
-                                                                                        let cardClass = "bg-white border-gray-100 text-gray-500";
-                                                                                        if (isKey) cardClass = "bg-emerald-50 border-emerald-200 text-gray-800 ring-1 ring-emerald-100";
-                                                                                        else if (isStudent && !isKey) cardClass = "bg-rose-50 border-rose-200 text-gray-800 ring-1 ring-rose-100";
-                                                                                        
-                                                                                        return (
-                                                                                            <div key={optIdx} className={`p-3 border rounded-lg flex items-center gap-4 ${cardClass}`}>
-                                                                                                <span className="font-bold text-xs opacity-50 w-4">{String.fromCharCode(65 + optIdx)}</span>
-                                                                                                <span className="flex-1 text-sm font-medium">{opt}</span>
-                                                                                                <div className="flex gap-2">
-                                                                                                    {isStudent && <span className="text-[10px] font-bold uppercase bg-white/80 px-2 py-1 rounded text-gray-600 shadow-sm">You Selected</span>}
-                                                                                                    {isKey && <span className="text-[10px] font-bold uppercase bg-emerald-600 text-white px-2 py-1 rounded shadow-sm">Correct Answer</span>}
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        );
-                                                                                    })}
-                                                                                </div>
-                                                                                {item.rationale && <div className="ml-12 mt-4 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-100"><span className="font-bold text-gray-800 block mb-1">Rationale:</span> {item.rationale}</div>}
                                                                             </div>
                                                                         ))}
                                                                     </div>
+                                                                    {item.rationale && <p className="mt-4 p-4 bg-gray-50 rounded-xl text-sm text-gray-500 italic">Rationale: {item.rationale}</p>}
                                                                 </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </React.Fragment>
-                                            );
-                                        })
-                                    )}
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
                     )}
                 </div>
+                <ConfirmModal isOpen={confirmReset.isOpen} title="Reset Attempt?" message="Full record deletion for this student session." onConfirm={() => resetAttempt(confirmReset.id)} onCancel={() => setConfirmReset({ isOpen: false, id: null })} />
             </div>
         );
     }
 
-    // --- 3. REVIEW INBOX (New Feature) ---
-    function ReviewInbox({ db, showNotification }) {
+    function ReviewInbox({ db, user, showNotification }) {
         const [requests, setRequests] = React.useState([]);
+        const [activeMenuId, setActiveMenuId] = React.useState(null);
         
         React.useEffect(() => {
+            if (!user) return;
             const q = query(collection(db, "review_requests"), orderBy("requestedAt", "desc"));
-            const unsubscribe = onSnapshot(q, (snap) => {
-                const list = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                setRequests(list);
-            });
+            const unsubscribe = onSnapshot(q, (snap) => setRequests(snap.docs.map(d => ({id: d.id, ...d.data()}))));
             return () => unsubscribe();
-        }, []);
+        }, [user]);
 
         const handleAction = async (id, status) => {
             try {
                 await updateDoc(doc(db, "review_requests", id), { status });
-                showNotification(`Request ${status}!`);
-            } catch (e) { showNotification("Error updating status", "error"); }
+                showNotification(`Status updated to ${status}!`);
+                setActiveMenuId(null);
+            } catch (e) { showNotification("Update failed", "error"); }
         };
 
         return (
-            <div className="max-w-4xl mx-auto">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                        <h3 className="font-bold text-gray-800">Review Requests</h3>
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">{requests.length} Total</span>
+            <div className="max-w-4xl mx-auto pb-32">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[400px]">
+                    <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
+                        <h3 className="font-bold text-gray-800">Review Queue</h3>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{requests.length} Requests</span>
                     </div>
-                    <div className="divide-y divide-gray-100">
-                        {requests.length === 0 && <div className="p-12 text-center text-gray-400">No review requests yet.</div>}
-                        {requests.map(req => (
-                            <div key={req.id} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <div className="divide-y">
+                        {requests.length === 0 ? <div className="p-20 text-center text-gray-400 italic font-sans">Queue is clear.</div> : requests.map(req => (
+                            <div key={req.id} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-all">
                                 <div>
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <h4 className="font-bold text-gray-800">{req.studentName}</h4>
-                                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${req.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{req.status}</span>
-                                    </div>
-                                    <p className="text-sm text-gray-500">Requested review for: <span className="font-medium text-gray-700">{req.examTitle}</span></p>
-                                    <p className="text-xs text-gray-400 mt-1">{req.requestedAt ? new Date(req.requestedAt.seconds * 1000).toLocaleString() : ''}</p>
+                                    <h4 className="font-bold text-gray-800">{req.studentName}</h4>
+                                    <p className="text-sm text-gray-500 font-sans">{req.examTitle}</p>
+                                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-tight font-sans">{req.requestedAt?.toDate().toLocaleString()}</p>
                                 </div>
-                                {req.status === 'pending' && (
-                                    <div className="flex gap-2">
-                                        <button onClick={() => handleAction(req.id, 'denied')} className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">Deny</button>
-                                        <button onClick={() => handleAction(req.id, 'approved')} className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Approve</button>
-                                    </div>
-                                )}
+                                <div className="relative">
+                                    <button onClick={() => setActiveMenuId(activeMenuId === req.id ? null : req.id)} className={`px-4 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wide transition-all ${req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : (req.status === 'denied' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600')}`}>
+                                        {req.status} <Icon name="chevronDown" size={12} className="inline ml-1" />
+                                    </button>
+                                    {activeMenuId === req.id && (
+                                        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-2xl border p-1 z-50 animate-dropdown">
+                                            <button onClick={() => handleAction(req.id, 'approved')} className="w-full text-left px-4 py-2 text-sm font-semibold hover:bg-emerald-50 hover:text-emerald-600 rounded-lg">Approve</button>
+                                            <button onClick={() => handleAction(req.id, 'denied')} className="w-full text-left px-4 py-2 text-sm font-semibold hover:bg-rose-50 hover:text-rose-600 rounded-lg">Deny</button>
+                                            <button onClick={() => handleAction(req.id, 'pending')} className="w-full text-left px-4 py-2 text-sm font-semibold hover:bg-amber-50 hover:text-amber-600 rounded-lg">Reset to Pending</button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -531,8 +704,7 @@
         );
     }
 
-    // --- 4. QUESTION EDITOR ---
-    function QuestionEditorLayout({ db, examId, showNotification }) {
+    function QuestionEditorLayout({ db, user, examId, showNotification }) {
         const [mode, setMode] = React.useState('add'); 
         const [editingQ, setEditingQ] = React.useState(null);
 
@@ -540,29 +712,28 @@
             <div className="max-w-5xl mx-auto h-full flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                     <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-200 inline-flex">
-                        <button onClick={() => { setMode('add'); setEditingQ(null); }} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'add' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>{editingQ ? 'Edit Question' : 'Add Question'}</button>
-                        <button onClick={() => setMode('list')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>Review Bank</button>
+                        <button onClick={() => { setMode('add'); setEditingQ(null); }} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'add' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>{editingQ ? 'Edit Question' : 'Add Question'}</button>
+                        <button onClick={() => setMode('list')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>Question Bank</button>
                     </div>
-                    <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-xs font-bold border border-indigo-100 shadow-sm">Editing Exam ID: <span className="font-mono">{examId}</span></div>
                 </div>
                 <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     {mode === 'add' ? (
-                        <AddQuestionForm db={db} examId={examId} showNotification={showNotification} editingData={editingQ} onCancel={() => { setEditingQ(null); setMode('add'); }} onSuccess={() => setEditingQ(null)} />
+                        <AddQuestionForm db={db} user={user} examId={examId} showNotification={showNotification} editingData={editingQ} onSuccess={() => setEditingQ(null)} onCancel={() => { setMode('list'); setEditingQ(null); }} />
                     ) : (
-                        <QuestionList db={db} examId={examId} showNotification={showNotification} onEdit={(q) => { setEditingQ(q); setMode('add'); }} />
+                        <QuestionList db={db} user={user} examId={examId} showNotification={showNotification} onEdit={(q) => { setEditingQ(q); setMode('add'); }} />
                     )}
                 </div>
             </div>
         );
     }
 
-    function AddQuestionForm({ db, examId, showNotification, editingData, onCancel, onSuccess }) {
+    function AddQuestionForm({ db, user, examId, showNotification, editingData, onSuccess, onCancel }) {
         const [isSATA, setIsSATA] = React.useState(false);
-        const [loading, setLoading] = React.useState(false);
         const [text, setText] = React.useState('');
         const [rationale, setRationale] = React.useState('');
         const [options, setOptions] = React.useState(['', '', '', '']); 
         const [correctIndices, setCorrectIndices] = React.useState([]);
+        const [loading, setLoading] = React.useState(false);
 
         React.useEffect(() => {
             if (editingData) {
@@ -571,62 +742,81 @@
                 setOptions(editingData.options);
                 setCorrectIndices(editingData.correctIndices || [editingData.correctAnswerIndex]);
                 setIsSATA(editingData.isSATA || false);
-            } else { resetForm(); }
+            }
         }, [editingData]);
 
-        const resetForm = () => { setText(''); setRationale(''); setOptions(['', '', '', '']); setCorrectIndices([]); setIsSATA(false); };
-        const handleOptionChange = (idx, val) => { const newOpts = [...options]; newOpts[idx] = val; setOptions(newOpts); };
-        const addOption = () => setOptions([...options, '']);
-        const removeOption = (idx) => {
-            if (options.length <= 2) { showNotification("Min 2 options required", "error"); return; }
-            const newOpts = options.filter((_, i) => i !== idx);
-            setOptions(newOpts);
-            const newCorrect = correctIndices.filter(i => i !== idx).map(i => (i > idx ? i - 1 : i));
-            setCorrectIndices(newCorrect);
-        };
-        const toggleCorrect = (idx) => {
-            if (isSATA) { if (correctIndices.includes(idx)) setCorrectIndices(correctIndices.filter(i => i !== idx)); else setCorrectIndices([...correctIndices, idx]); } else { setCorrectIndices([idx]); }
-        };
         const handleSubmit = async (e) => {
             e.preventDefault();
-            if (correctIndices.length === 0 || options.some(o => !o.trim())) return;
+            if (!user || correctIndices.length === 0) return;
             setLoading(true);
             try {
                 const data = { examId, text, options, correctIndices: correctIndices.sort(), isSATA, rationale, createdAt: editingData ? editingData.createdAt : serverTimestamp() };
-                if (editingData) { await updateDoc(doc(db, "questions", editingData.id), data); showNotification("Updated!"); } else { await addDoc(collection(db, "questions"), data); showNotification("Added!"); }
-                if (onSuccess) onSuccess(); resetForm();
-            } catch (err) { showNotification("Error saving.", "error"); } finally { setLoading(false); }
+                if (editingData) await updateDoc(doc(db, "questions", editingData.id), data);
+                else await addDoc(collection(db, "questions"), data);
+                showNotification("Question saved!");
+                onSuccess?.();
+                setText(''); setRationale(''); setOptions(['','','','']); setCorrectIndices([]); setIsSATA(false);
+            } catch (err) { showNotification("Save failed", "error"); } finally { setLoading(false); }
         };
 
         return (
-            <div className="p-8 scroller overflow-y-auto h-full relative">
-                {editingData && <div className="absolute top-4 right-8 bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 animate-pulse">EDIT MODE</div>}
+            <div className="p-8 scroller overflow-y-auto h-full">
                 <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-8">
-                    <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100"><input type="checkbox" checked={isSATA} onChange={(e) => { setIsSATA(e.target.checked); setCorrectIndices([]); }} className="w-5 h-5" /><div><span className="block text-sm font-bold text-blue-900">Enable SATA Mode</span><span className="text-xs text-blue-600">Select All That Apply</span></div></div>
-                    <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Question Stem</label><textarea value={text} onChange={(e) => setText(e.target.value)} required rows="3" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Question..." /></div>
-                    <div className="space-y-4"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">Options</label><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{options.map((optVal, idx) => (<div key={idx} className={`relative p-2 pl-3 rounded-xl border flex items-center gap-3 ${correctIndices.includes(idx) ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}><button type="button" onClick={() => toggleCorrect(idx)} className={`w-8 h-8 rounded-lg border flex items-center justify-center ${correctIndices.includes(idx) ? 'bg-emerald-500 text-white' : 'bg-gray-50'}`}><Icon name="check" size={16} /></button><input type="text" value={optVal} onChange={(e) => handleOptionChange(idx, e.target.value)} required className="flex-1 p-2 bg-transparent border-b border-transparent focus:border-indigo-500 outline-none text-sm" placeholder={`Option ${String.fromCharCode(65 + idx)}`} /><button type="button" onClick={() => removeOption(idx)} className="text-gray-300 hover:text-rose-500 p-2"><Icon name="x" size={16} /></button></div>))}</div><button type="button" onClick={addOption} className="w-full py-3 border border-dashed border-gray-300 rounded-xl text-gray-500 font-bold text-sm hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center gap-2"><Icon name="plus" size={16} /> Add Option</button></div>
-                    <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Rationale</label><textarea value={rationale} onChange={(e) => setRationale(e.target.value)} required rows="2" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Rationale..." /></div>
-                    <div className="pt-4 flex gap-4">{editingData && <button type="button" onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-xl font-bold">Cancel</button>}<button type="submit" disabled={loading} className={`flex-1 bg-indigo-600 text-white py-4 rounded-xl font-bold ${editingData ? 'bg-amber-600' : ''}`}>{loading ? 'Saving...' : (editingData ? 'Update' : 'Save')}</button></div>
+                    <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100 cursor-pointer" onClick={() => setIsSATA(!isSATA)}>
+                        <input type="checkbox" checked={isSATA} readOnly className="w-5 h-5 cursor-pointer" />
+                        <div><span className="block text-sm font-bold text-blue-900 uppercase tracking-wide">Enable SATA Mode</span><span className="text-[10px] text-blue-600 font-bold font-sans">Multiple Selection Allowed</span></div>
+                    </div>
+                    <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Question Stem</label><textarea value={text} onChange={(e) => setText(e.target.value)} required rows="3" className="w-full p-4 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-sans" placeholder="..." /></div>
+                    <div className="space-y-4"><label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Options</label><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{options.map((opt, i) => (<div key={i} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${correctIndices.includes(i) ? 'bg-emerald-50 border-emerald-500' : 'bg-gray-50'}`}><button type="button" onClick={() => isSATA ? (correctIndices.includes(i) ? setCorrectIndices(correctIndices.filter(ci => ci !== i)) : setCorrectIndices([...correctIndices, i])) : setCorrectIndices([i])} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${correctIndices.includes(i) ? 'bg-emerald-500 text-white' : 'bg-white text-gray-300 border'}`}><Icon name="check" size={16} /></button><input type="text" value={opt} onChange={(e) => { const n = [...options]; n[i] = e.target.value; setOptions(n); }} required className="flex-1 bg-transparent outline-none text-sm font-sans" placeholder={`Option ${i+1}`} /></div>))}</div></div>
+                    <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Rationale</label><textarea value={rationale} onChange={(e) => setRationale(e.target.value)} required rows="2" className="w-full p-4 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-sans" placeholder="..." /></div>
+                    <div className="flex gap-4">{editingData && <button type="button" onClick={onCancel} className="flex-1 py-4 bg-gray-100 font-bold rounded-xl text-gray-500">Cancel</button>}<button type="submit" disabled={loading} className="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg">{loading ? 'Saving...' : 'Save Question'}</button></div>
                 </form>
             </div>
         );
     }
 
-    function QuestionList({ db, examId, showNotification, onEdit }) {
+    function QuestionList({ db, user, examId, showNotification, onEdit }) {
         const [questions, setQuestions] = React.useState([]);
+        const [confirmDelete, setConfirmDelete] = React.useState({ isOpen: false, id: null });
+
         React.useEffect(() => {
+            if (!user || !examId) return;
             const q = query(collection(db, "questions"), where("examId", "==", examId));
-            const unsubscribe = onSnapshot(q, (snap) => {
-                const d = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                d.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                setQuestions(d);
-            });
+            const unsubscribe = onSnapshot(q, (snap) => setQuestions(snap.docs.map(d => ({id: d.id, ...d.data()}))));
             return () => unsubscribe();
-        }, [examId]);
-        const handleDelete = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "questions", id)); };
-        if (questions.length === 0) return <div className="p-12 text-center text-gray-400">No questions yet.</div>;
+        }, [user, examId]);
+
+        const handleDelete = async (id) => {
+            try {
+                await deleteDoc(doc(db, "questions", id));
+                showNotification("Deleted.");
+                setConfirmDelete({ isOpen: false, id: null });
+            } catch(e) { showNotification("Delete failed", "error"); }
+        };
+
         return (
-            <div className="h-full overflow-y-auto scroller"><table className="w-full text-left border-collapse"><thead className="bg-gray-50 sticky top-0 text-xs font-bold text-gray-500 uppercase"><tr><th className="p-4 border-b">Type</th><th className="p-4 border-b">Question</th><th className="p-4 border-b text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-100">{questions.map(q => (<tr key={q.id} className="hover:bg-gray-50"><td className="p-4 w-24"><span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase ${q.isSATA ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{q.isSATA ? 'SATA' : 'Single'}</span></td><td className="p-4"><p className="font-medium text-gray-800 line-clamp-2">{q.text}</p></td><td className="p-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => onEdit(q)} className="p-2 text-indigo-400 hover:bg-indigo-50 rounded-lg"><Icon name="pencil" size={18} /></button><button onClick={() => handleDelete(q.id)} className="p-2 text-gray-300 hover:text-rose-500 rounded-lg"><Icon name="trash" size={18} /></button></div></td></tr>))}</tbody></table></div>
+            <div className="h-full overflow-y-auto scroller relative">
+                <table className="w-full text-left">
+                    <thead className="bg-gray-50 sticky top-0 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b z-10">
+                        <tr><th className="p-4">Type</th><th className="p-4">Question</th><th className="p-4 text-right">Actions</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {questions.map(q => (
+                            <tr key={q.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${q.isSATA ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>{q.isSATA ? 'SATA' : 'Single'}</span></td>
+                                <td className="p-4 text-sm font-medium line-clamp-1">{q.text}</td>
+                                <td className="p-4 text-right">
+                                    <div className="flex justify-end gap-2">
+                                        <button onClick={() => onEdit(q)} className="p-2 text-indigo-400 hover:bg-indigo-50 rounded-lg"><Icon name="pencil" size={16} /></button>
+                                        <button onClick={() => setConfirmDelete({ isOpen: true, id: q.id })} className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg"><Icon name="trash" size={16} /></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <ConfirmModal isOpen={confirmDelete.isOpen} title="Delete Question?" message="Permanently remove from bank." onConfirm={() => handleDelete(confirmDelete.id)} onCancel={() => setConfirmDelete({ isOpen: false, id: null })} />
+            </div>
         );
     }
 
