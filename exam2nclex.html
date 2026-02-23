@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlliedRNPRep vExam 2: Documentation, Ethics, Law, and Informatics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .nclex-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-top: 4px solid #2563eb;
+        }
+
+        .option-container:hover {
+            background-color: #eff6ff;
+        }
+
+        .option-selected {
+            background-color: #dbeafe !important;
+            border-color: #2563eb !important;
+        }
+
+        .sata-badge {
+            background-color: #fef3c7;
+            color: #92400e;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-lg font-bold text-gray-800">AlliedRNPRep vExam 2</h1>
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Documentation, Ethics, Law, and Informatics</p>
+            </div>
+            <div id="timer" class="text-xl font-mono font-bold text-blue-600">00:00:00</div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 md:p-8">
+        <div id="game-container" class="max-w-4xl mx-auto">
+            <!-- App content will be injected here -->
+        </div>
+    </main>
+
+    <!-- Footer Progress -->
+    <footer id="exam-footer" class="bg-white border-t border-gray-200 p-4 hidden">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mr-4">
+                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+            <span id="progress-text" class="text-sm font-medium text-gray-700 whitespace-nowrap">Question 1 of 50</span>
+        </div>
+    </footer>
+
+    <script>
+        const questions = [
+            {
+                id: 1,
+                type: "mcq",
+                text: "A nurse is reviewing a patient's healthcare documentation. Which of the following best describes the primary goal of this documentation?",
+                options: [
+                    "To provide a subjective narrative of the patient's emotional state.",
+                    "To describe the facts clearly and concisely to improve interdisciplinary care.",
+                    "To legally protect the nurse from any malpractice lawsuits.",
+                    "To ensure the facility receives maximum financial reimbursement."
+                ],
+                answer: 1,
+                rationale: "The goal of healthcare documentation is to describe facts clearly and concisely to improve interdisciplinary care."
+            },
+            {
+                id: 2,
+                type: "mcq",
+                text: "While administering morning medications, a nurse uses a portable scanner for bar-coded medication administration (BCMA). After scanning the patient's wristband and the medication, the system generates an alert. What is the appropriate interpretation of this alert?",
+                options: [
+                    "The medication has been successfully administered and documented.",
+                    "The eMAR and the scanned medication do not agree, indicating a potential problem.",
+                    "The patient's insurance requires a prior authorization for the scanned drug.",
+                    "The scanner battery is low and needs to be replaced immediately."
+                ],
+                answer: 1,
+                rationale: "If the eMAR and the scanned medication do not agree, the nurse will receive an alert about a potential problem."
+            },
+            {
+                id: 3,
+                type: "sata",
+                text: "A patient is being prepared for discharge. The nurse is compiling the discharge summary. Which of the following components MUST be included in this documentation? (Select All That Apply)",
+                options: [
+                    "Information about medication and treatment",
+                    "Patient education provided",
+                    "A detailed list of all visitors the patient had during the stay",
+                    "Follow-up appointments and referrals",
+                    "Discharge placement"
+                ],
+                answer: [0, 1, 3, 4],
+                rationale: "The discharge summary includes information about medication and treatment, discharge placement, patient education, follow-up appointments, and referrals."
+            },
+            {
+                id: 4,
+                type: "mcq",
+                text: "During a code blue, the attending physician shouts a verbal order for a medication. Which action by the registered nurse (RN) demonstrates adherence to safety guidelines for verbal orders?",
+                options: [
+                    "The RN writes the order down and waits for the physician to sign it before administering.",
+                    "The RN administers the medication immediately and documents it at the end of the shift.",
+                    "The RN repeats the order verbatim to confirm accuracy before administering.",
+                    "The RN refuses the order because verbal orders are strictly prohibited in all circumstances."
+                ],
+                answer: 2,
+                rationale: "If it is necessary in an emergency, the order must be taken by a registered nurse (RN) and the order must be repeated verbatim to confirm the accuracy."
+            },
+            {
+                id: 5,
+                type: "mcq",
+                text: "A patient falls while walking to the bathroom. The nurse completes an incident report. Where should the nurse file this document?",
+                options: [
+                    "In the patient's permanent medical record to ensure transparency.",
+                    "With the patient's discharge summary so the primary care provider is aware.",
+                    "In the facility's risk management or quality improvement documentation, separate from the medical record.",
+                    "In the nurse's personal files for legal protection."
+                ],
+                answer: 2,
+                rationale: "Incident reports are NOT part of the medical record but is considered a risk management or quality improvement document."
+            },
+            {
+                id: 6,
+                type: "mcq",
+                text: "A nurse is caring for a highly acute and complex patient. According to the ANA standard of professional nursing practice, when should documentation of interventions and condition changes occur?",
+                options: [
+                    "As soon as possible after assessment, intervention, condition changes, or evaluation.",
+                    "At the end of the shift to ensure all information is compiled into one cohesive note.",
+                    "Only when an abnormal finding is discovered.",
+                    "Every 4 hours, regardless of changes in the patient's status."
+                ],
+                answer: 0,
+                rationale: "Events are reported in the order they happened, and documentation should happen as soon as possible after assessment, intervention, condition changes, or evaluation. Waiting until the end of the shift compromises safety."
+            },
+            {
+                id: 7,
+                type: "mcq",
+                text: "A nurse is transcribing a written order. Which of the following abbreviations is considered unsafe and should NOT be used?",
+                options: [
+                    "\"unit\" instead of \"U\"",
+                    "\"daily\" instead of \"QD\"",
+                    "\"MgSO4\" instead of \"magnesium sulfate\"",
+                    "A leading zero (e.g., 0.5 mg)"
+                ],
+                answer: 2,
+                rationale: "Do not use MS, MS04, MgSO4, write morphine sulfate/magnesium sulfate."
+            },
+            {
+                id: 8,
+                type: "mcq",
+                text: "When documenting a patient's progress using the SOAPIER format, what does the \"R\" represent?",
+                options: [
+                    "Response",
+                    "Recommendation",
+                    "Revisions to plan",
+                    "Rationale"
+                ],
+                answer: 2,
+                rationale: "In SOAPIER notes, the \"R\" stands for revisions to plan."
+            },
+            {
+                id: 9,
+                type: "mcq",
+                text: "A nurse is receiving a patient from the surgical unit. During the SBAR hand-off report, the transferring nurse states, \"I suggest we request a respiratory therapy consult to evaluate the patient's oxygen needs.\" In which section of SBAR does this statement belong?",
+                options: [
+                    "Situation",
+                    "Background",
+                    "Assessment",
+                    "Recommendation"
+                ],
+                answer: 3,
+                rationale: "In SBAR, Recommendation addresses what should be done to correct the problem."
+            },
+            {
+                id: 10,
+                type: "mcq",
+                text: "According to The Joint Commission, a significant percentage of sentinel events (safety occurrences that cause serious injury or death) are caused by which of the following?",
+                options: [
+                    "Medication errors",
+                    "Errors in communication, specifically during patient hand-off",
+                    "Inadequate staffing ratios",
+                    "Equipment malfunctions"
+                ],
+                answer: 1,
+                rationale: "70% of these sentinel events are caused by errors in communication, 50% being during patient hand-off."
+            },
+            {
+                id: 11,
+                type: "mcq",
+                text: "A nurse makes an error while documenting in a patient's electronic health record (EHR). Which of the following is true regarding correcting this error?",
+                options: [
+                    "The nurse can delete the entry completely so it is obliterated from the record.",
+                    "New information is visible on the screen, but the correction process remains part of the permanent medical record.",
+                    "The nurse must print the page, white-out the error, and rescan it into the system.",
+                    "The EHR does not allow any corrections once the \"save\" button is clicked."
+                ],
+                answer: 1,
+                rationale: "Documentation cannot be altered or obliterated in the EHR; if changes need to be made, new information is visible on the screen, but the correction process is still part of the permanent medical record."
+            },
+            {
+                id: 12,
+                type: "mcq",
+                text: "A patient requests a copy of their medical records. Under HIPAA and the ARRA of 2009, what is the facility's legal obligation regarding fees?",
+                options: [
+                    "The facility can charge for the retrieval of the records, but not for copying.",
+                    "The facility cannot charge for retrieval, but a fee can be charged for copying and mailing.",
+                    "The facility is prohibited from charging any fees for medical records.",
+                    "The facility can charge an unlimited administrative fee for both retrieval and copying."
+                ],
+                answer: 1,
+                rationale: "A fee can be charged for copying and mailing records, but facilities CANNOT charge for retrieval of a patient's medical records."
+            },
+            {
+                id: 13,
+                type: "mcq",
+                text: "A nurse prioritizes administering pain medication to a patient in severe distress, placing the patient's needs above the nurse's own desire to take a scheduled break. This action best demonstrates which ethical principle?",
+                options: [
+                    "Nonmaleficence",
+                    "Autonomy",
+                    "Beneficence",
+                    "Veracity"
+                ],
+                answer: 2,
+                rationale: "Beneficence is defined as doing good. Nurses show beneficence by acting on behalf of others and placing priority on the needs of others rather than on personal thoughts and feelings."
+            },
+            {
+                id: 14,
+                type: "mcq",
+                text: "A nurse strongly opposes a patient's decision to discontinue life-sustaining treatments. However, the nurse supports the patient's right to refuse treatment. This demonstrates the nurse's respect for:",
+                options: [
+                    "Justice",
+                    "Autonomy",
+                    "Fidelity",
+                    "Utilitarianism"
+                ],
+                answer: 1,
+                rationale: "Nurses support patients in their decisions about treatment options, including the right to refuse treatments, demonstrating respect for autonomy."
+            },
+            {
+                id: 15,
+                type: "mcq",
+                text: "A family asks the nurse to withhold a terminal cancer diagnosis from the patient to \"protect them from despair.\" The nurse knows that withholding this information from a competent patient violates which ethical principle?",
+                options: [
+                    "Veracity",
+                    "Beneficence",
+                    "Nonmaleficence",
+                    "Justice"
+                ],
+                answer: 0,
+                rationale: "Veracity is the obligation to be truthful. If a patient's family does not want the patient to know the prognosis, it is unethical to withhold information from the patient."
+            },
+            {
+                id: 16,
+                type: "mcq",
+                text: "A nurse makes a medication error and immediately reports it to the charge nurse and the physician, taking responsibility to ensure patient safety despite potential personal consequences. This action illustrates:",
+                options: [
+                    "Advocacy",
+                    "Accountability",
+                    "Confidentiality",
+                    "Utilitarianism"
+                ],
+                answer: 1,
+                rationale: "An accountable nurse reports the error and takes responsibility to ensure patient safety regardless of personal consequences."
+            },
+            {
+                id: 17,
+                type: "mcq",
+                text: "An ethical theory focuses solely on the consequences of an action, maintaining that the \"end justifies the means\" and seeking the greater good for the most people. This theory is known as:",
+                options: [
+                    "Deontology",
+                    "Rights-based ethics",
+                    "Virtue-based ethics",
+                    "Utilitarianism"
+                ],
+                answer: 3,
+                rationale: "Utilitarianism focuses solely on consequences, viewing that the \"end justifies the means\" for the greater good."
+            },
+            {
+                id: 18,
+                type: "mcq",
+                text: "A nursing student is struggling in clinicals. According to the ANA Code of Ethics for Nurses, what is the responsibility of the nursing faculty?",
+                options: [
+                    "To independently pass the student to ensure high graduation rates.",
+                    "To advise, supervise, and collaborate with the student to identify learning needs and facilitate the educational process.",
+                    "To delegate the student's supervision entirely to the floor nurses.",
+                    "To report the student directly to the state board of nursing."
+                ],
+                answer: 1,
+                rationale: "Nursing faculty are required to advise and supervise their students, and expected to collaborate with students to identify individual learning needs in the clinical setting and facilitate the educational process."
+            },
+            {
+                id: 19,
+                type: "mcq",
+                text: "A nurse is feeling extreme anguish because institutional constraints prevent them from acting according to their core values and providing the preferred patient outcome. This experience is known as:",
+                options: [
+                    "Malpractice",
+                    "Moral distress",
+                    "Compassion fatigue",
+                    "A sentinel event"
+                ],
+                answer: 1,
+                rationale: "Moral distress is the anguish health care professionals experience... when they are unable to act according to their personal core values or obligations, or when their actions do not result in the preferred outcome."
+            },
+            {
+                id: 20,
+                type: "mcq",
+                text: "A nurse threatens to restrain a competent patient if they do not stay in bed. The patient feels a sense of imminent harm. This intentional tort is classified as:",
+                options: [
+                    "Battery",
+                    "Assault",
+                    "False imprisonment",
+                    "Defamation of character"
+                ],
+                answer: 1,
+                rationale: "Assault is a threat of bodily harm or violence... A feeling of imminent harm/danger must exist. A nurse can assault patients by threatening to hit, sedate, or restrain them."
+            },
+            {
+                id: 21,
+                type: "mcq",
+                text: "A nurse starts an IV line on a patient who has explicitly refused the procedure. The patient suffers physical harm as a result. The nurse can be charged with:",
+                options: [
+                    "Assault",
+                    "Invasion of privacy",
+                    "Battery",
+                    "Slander"
+                ],
+                answer: 2,
+                rationale: "Battery is actual physical harm to another person; performing procedures such as IV or catheter insertion without consent is battery."
+            },
+            {
+                id: 22,
+                type: "mcq",
+                text: "A nurse places all four bed rails up on a patient's bed to prevent them from leaving the healthcare facility without an order. This action constitutes:",
+                options: [
+                    "Malpractice",
+                    "False imprisonment",
+                    "Beneficence",
+                    "Negligence"
+                ],
+                answer: 1,
+                rationale: "False imprisonment involves unauthorized restraint or detention, such as preventing patients from leaving by having all bed rails up."
+            },
+            {
+                id: 23,
+                type: "sata",
+                text: "Which of the following are the four \"Ds\" required to prove negligence? (Select All That Apply)",
+                options: [
+                    "Duty",
+                    "Dereliction",
+                    "Deceit",
+                    "Damages",
+                    "Direct cause"
+                ],
+                answer: [0, 1, 3, 4],
+                rationale: "The four Ds of negligence are Duty, Dereliction, Damages, and Direct cause."
+            },
+            {
+                id: 24,
+                type: "mcq",
+                text: "A registered nurse (RN) delegates the documentation of routine vital signs to an Unlicensed Assistive Personnel (UAP). Who is ultimately responsible for knowing if the care was completed and whether the findings were within normal limits?",
+                options: [
+                    "The UAP",
+                    "The RN",
+                    "The charge nurse",
+                    "The physician"
+                ],
+                answer: 1,
+                rationale: "UAP document delegated care in the EHR, but the nurse is responsible for knowing whether the care was completed and checking if findings are within normal limits."
+            },
+            {
+                id: 25,
+                type: "mcq",
+                text: "A physician is preparing to perform an invasive surgical procedure. What is the nurse's primary role regarding informed consent?",
+                options: [
+                    "Explaining the exact details of the treatment and its alternatives.",
+                    "Outlining all known risks and benefits.",
+                    "Witnessing the signing to verify the patient is competent and the signature is authentic.",
+                    "Obtaining consent from a patient who is currently under the influence of narcotic pain medication."
+                ],
+                answer: 2,
+                rationale: "It is the responsibility of the physician/APRN to explain the content; nurses are usually asked to witness the signing to verify the patient is competent and the signature is authenticate."
+            },
+            {
+                id: 26,
+                type: "mcq",
+                text: "A patient has a document specifying the treatments they want to receive if they become unconscious or incapable of making independent decisions, including withholding certain treatments. This document is a:",
+                options: [
+                    "Durable power of attorney for health care",
+                    "Living will",
+                    "Do Not Resuscitate (DNR) order",
+                    "Provider Order for Life-Sustaining Treatment (POLST)"
+                ],
+                answer: 1,
+                rationale: "A living will specifies the treatment a person wants to receive when the patient is unconscious or no longer capable of making decisions independently, including withholding treatment."
+            },
+            {
+                id: 27,
+                type: "mcq",
+                text: "What does the portability aspect of the Health Insurance Portability and Accountability Act (HIPAA) ensure?",
+                options: [
+                    "It prevents individuals with employer health coverage (for a minimum of 12 months) from losing coverage during a job change, even with preexisting conditions.",
+                    "It allows nurses to port patient charts from one facility to another without authorization.",
+                    "It allows patients to sell their protected health information (PHI) to researchers.",
+                    "It mandates that all medical records be kept on portable thumb drives."
+                ],
+                answer: 0,
+                rationale: "The portability aspect of HIPAA prevents individuals who have had coverage through an employer for a minimum of 12 months) from losing coverage during a job change, even with preexisting conditions."
+            },
+            {
+                id: 28,
+                type: "mcq",
+                text: "A nurse needs to fax confidential patient information to another facility. Which of the following actions is required to maintain HIPAA compliance?",
+                options: [
+                    "Faxing the document without a cover sheet to save paper.",
+                    "Using a cover sheet with a highly visible note of confidentiality and calling the receiving facility to confirm receipt.",
+                    "Sending the fax to a public printer in the receiving facility's lobby.",
+                    "Leaving the patient's name off the document but including their social security number."
+                ],
+                answer: 1,
+                rationale: "Fax transmissions must have a cover sheet with a highly visible note of confidential information; the receiving facility should be called to confirm they are ready and have received it."
+            },
+            {
+                id: 29,
+                type: "sata",
+                text: "A nurse provides emergency care at the scene of a car accident. The nurse's actions are protected under the Good Samaritan laws provided that: (Select All That Apply)",
+                options: [
+                    "The care provided is within the nurse's scope of knowledge and standards of care.",
+                    "The nurse charges a standard fee for the emergency services.",
+                    "No fee is received or charged for services.",
+                    "The nurse commits gross negligence while providing care.",
+                    "The nurse transfers care to equally competent professionals before leaving the scene."
+                ],
+                answer: [0, 2, 4],
+                rationale: "Good Samaritan Acts protect nurses if care is within their scope/standards , no fee is received , and care is transferred to equally competent professionals before leaving. Gross negligence is NOT protected."
+            },
+            {
+                id: 30,
+                type: "sata",
+                text: "Under the Uniform Determination of Death Act, which of the following criteria can be used to declare a person dead? (Select All That Apply)",
+                options: [
+                    "All spontaneous respiratory and circulatory function stops.",
+                    "The patient is in a deep coma but maintains spontaneous respirations.",
+                    "All brain function, including that of the brainstem, ends.",
+                    "The patient has an irregular heartbeat but no pupillary response."
+                ],
+                answer: [0, 2],
+                rationale: "The criteria for death include all spontaneous respiratory and circulatory function stops OR all brain function, including that of the brainstem, ends."
+            },
+            {
+                id: 31,
+                type: "mcq",
+                text: "A patient in Oregon with a terminal diagnosis and a 3-month prognosis requests Medical Aid in Dying (MAID). According to the ANA Code of Ethics, what is the nurse's role?",
+                options: [
+                    "The nurse must inject the lethal dose of medication to ensure safety.",
+                    "The nurse is prohibited from participating in MAID but must respect the patient's autonomy and provide end-of-life care.",
+                    "The nurse must attempt to convince the patient to choose hospice instead.",
+                    "The nurse should refer the patient to a facility in a state where MAID is illegal."
+                ],
+                answer: 1,
+                rationale: "Nurses are prohibited by the code of ethics to participate in MAID, but must respect the autonomy of the patient and provide comprehensive end of life care."
+            },
+            {
+                id: 32,
+                type: "mcq",
+                text: "A nurse places physical restraints on a patient to prevent them from pulling out an IV. According to TJC, federal, and state laws, which of the following is required?",
+                options: [
+                    "A verbal order from the charge nurse.",
+                    "A written order that includes dates, start times, and stop times, and is updated regularly.",
+                    "Restraints can be used as a first-line intervention if the nurse is busy.",
+                    "The restraints can be left on indefinitely without a new order as long as the IV is in place."
+                ],
+                answer: 1,
+                rationale: "The written order for physical restraints must include dates, start times, and stop times and must be updated regularly."
+            },
+            {
+                id: 33,
+                type: "mcq",
+                text: "In nursing informatics, what is the definition of \"information\"?",
+                options: [
+                    "Facts, observations, and measurements that are meaningless until processed.",
+                    "Organized and processed data that can be communicated and is meaningful and useful.",
+                    "The use of knowledge and experience to manage and solve problems.",
+                    "Information applied to problem-solving and decision-making."
+                ],
+                answer: 1,
+                rationale: "Information is organized and processed data that can be communicated and is meaningful and useful."
+            },
+            {
+                id: 34,
+                type: "mcq",
+                text: "A nurse utilizes a computer system that alerts them to a potential medication interaction and recommends a different dosage. This system is an example of:",
+                options: [
+                    "A Bar-code medication administration (BCMA) system",
+                    "Telemedicine",
+                    "A Computerized decision support system (DSS)",
+                    "A standardized nursing terminology set"
+                ],
+                answer: 2,
+                rationale: "Computerized decision support systems (DSSs) include alerts/reminders; some assist in determining diagnoses and choosing appropriate medication."
+            },
+            {
+                id: 35,
+                type: "mcq",
+                text: "Which of the following is a known disadvantage of Computerized Provider Order Entry (CPOE) systems?",
+                options: [
+                    "Deciphering handwriting",
+                    "Decreased communication speed to the pharmacy",
+                    "Alert fatigue, where too many warnings cause the user to ignore them",
+                    "Inability to update individualized care plans"
+                ],
+                answer: 2,
+                rationale: "Disadvantages of CPOE include provider resistance and the fact that when too many alerts/warnings pop up, the user may ignore them (alert fatigue)."
+            },
+            {
+                id: 36,
+                type: "mcq",
+                text: "A nursing student demonstrates the ability to recognize when information is needed, and can locate, evaluate, and effectively use it. This competency is known as:",
+                options: [
+                    "Computer literacy",
+                    "Information literacy",
+                    "Artificial intelligence",
+                    "Telehealth competency"
+                ],
+                answer: 1,
+                rationale: "Information literacy is the ability to recognize when information is needed... and locate, evaluate, and effectively use the needed information."
+            },
+            {
+                id: 37,
+                type: "sata",
+                text: "The TIGER Vision Pillars, designed to address informatics and emerging technologies, include which of the following? (Select All That Apply)",
+                options: [
+                    "Management and leadership",
+                    "Education",
+                    "Bedside manner",
+                    "IT policy and culture",
+                    "Informatics design"
+                ],
+                answer: [0, 1, 3, 4],
+                rationale: "The TIGER Vision Pillars include Management and leadership, Education, Communication and collaboration, Informatics design, IT policy and culture, and Standardized terminology."
+            },
+            {
+                id: 38,
+                type: "mcq",
+                text: "Which standardized nursing terminology system includes clinical data for use in all nursing settings and provides descriptions of nursing diagnoses, care, outcomes, and resources?",
+                options: [
+                    "SNOMED CT",
+                    "Nursing Outcomes Classifications (NOC)",
+                    "Nursing Minimum Data Set (NMDS)",
+                    "Perioperative Nursing Data Set (PNDS)"
+                ],
+                answer: 2,
+                rationale: "Nursing Minimum Data Set (NMDS) contents include clinical data for use in all nursing settings, descriptions of diagnoses, care, outcomes, and resources."
+            },
+            {
+                id: 39,
+                type: "mcq",
+                text: "A patient is researching their new diagnosis online. The nurse teaches the patient how to evaluate website credibility. When checking the \"Authority\" of a site, what is the patient looking for?",
+                options: [
+                    "When the site was created and how often it is updated.",
+                    "If there is any bias in the information presented.",
+                    "The credentials of the author and who sponsors or publishes the website.",
+                    "Whether the citations are correct and text is balanced with images."
+                ],
+                answer: 2,
+                rationale: "Checking Authority involves asking who the sponsor/publisher is, the credentials of the author, and if it is a personal page."
+            },
+            {
+                id: 40,
+                type: "mcq",
+                text: "The Computer Ethics Institute (CEI) developed the Ten Commandments of Computer Ethics. Which of the following violates these commandments?",
+                options: [
+                    "Using a computer to help organize a community health fair.",
+                    "Snooping around other people's computer files.",
+                    "Thinking about the social consequences of a program you are designing.",
+                    "Using a computer in ways that ensure respect for fellow humans."
+                ],
+                answer: 1,
+                rationale: "The ten commandments of computer ethics state \"Thou shalt not snoop around other people's computer files\"."
+            },
+            {
+                id: 41,
+                type: "mcq",
+                text: "A nurse uses a portable scanner to administer medications. Before administration, the nurse must perform three checks. These include checking the order, drug expiration, and:",
+                options: [
+                    "The patient's insurance status.",
+                    "The patient's allergies.",
+                    "The room number.",
+                    "The physician's DEA number."
+                ],
+                answer: 1,
+                rationale: "The nurse performs three checks: patient allergies, the order, and drug expiration."
+            },
+            {
+                id: 42,
+                type: "mcq",
+                text: "Which of the following charting formats focuses only on recording abnormal or significant data?",
+                options: [
+                    "PIE Notes",
+                    "Narrative charting",
+                    "Charting by exception (CBE)",
+                    "DAR Notes"
+                ],
+                answer: 2,
+                rationale: "Charting by exception (CBE) notes only record abnormal/significant data."
+            },
+            {
+                id: 43,
+                type: "mcq",
+                text: "The electronic health record (EHR) differs from the electronic medical record (EMR) in that the EHR:",
+                options: [
+                    "Is used only for a single episode of care.",
+                    "Contains only administrative data.",
+                    "Is a longitudinal record of health that includes inpatient and outpatient episodes from one or more settings.",
+                    "Is only accessible by the billing department."
+                ],
+                answer: 2,
+                rationale: "The EMR is a record of one episode of care, while the EHR is a longitudinal record of health that includes inpatient and outpatient episodes."
+            },
+            {
+                id: 44,
+                type: "mcq",
+                text: "A patient refuses to sign an informed consent form for an elective surgery because they do not understand the alternative treatments available. The nurse should:",
+                options: [
+                    "Instruct the patient to sign it anyway because the OR is waiting.",
+                    "Notify the physician so they can explain the content and answer the patient's questions.",
+                    "Explain the alternative treatments to the patient and have them sign.",
+                    "Cancel the surgery immediately."
+                ],
+                answer: 1,
+                rationale: "It is the responsibility of the physician/PA/APRN performing the procedure to explain the content of the informed consent form (which includes alternatives)."
+            },
+            {
+                id: 45,
+                type: "mcq",
+                text: "Which of the following is considered \"futile care\"?",
+                options: [
+                    "Administering pain medication to a hospice patient.",
+                    "Useless care that only prolongs the time of death.",
+                    "Providing vaccinations to pediatric patients.",
+                    "Implementing fall prevention protocols."
+                ],
+                answer: 1,
+                rationale: "Futile care is useless care that only prolongs time of death."
+            },
+            {
+                id: 46,
+                type: "mcq",
+                text: "Which branch of law governs unjust acts against individuals, such as defamation of character, negligence, and malpractice?",
+                options: [
+                    "Constitutional law",
+                    "Regulatory law",
+                    "Criminal law",
+                    "Civil law"
+                ],
+                answer: 3,
+                rationale: "Civil law governs unjust acts against individuals... such as defamation of character, negligence, malpractice (Torts)."
+            },
+            {
+                id: 47,
+                type: "mcq",
+                text: "A nurse is documenting care. Falsifying patient records is considered:",
+                options: [
+                    "Unethical, but not illegal.",
+                    "Legal, but unethical.",
+                    "Both unethical and illegal.",
+                    "Acceptable if it protects the hospital from liability."
+                ],
+                answer: 2,
+                rationale: "Falsifying patient records is unethical and illegal."
+            },
+            {
+                id: 48,
+                type: "mcq",
+                text: "Under the American Recovery and Reinvestment Act (2009), patients have the right to request copies of their EHR. What is the timeframe and cost associated with this?",
+                options: [
+                    "Within 7 days at a premium cost.",
+                    "Within 30 days at a minimal cost.",
+                    "Within 60 days for free.",
+                    "Within 1 year with an administrative fee."
+                ],
+                answer: 1,
+                rationale: "The ARRA (2009) allows patients to request copies of their EHR within 30 days and at a minimal cost."
+            },
+            {
+                id: 49,
+                type: "mcq",
+                text: "A patient's visual acuity and ability to understand basic health information needed to make appropriate health decisions is referred to as:",
+                options: [
+                    "Information literacy",
+                    "Computer literacy",
+                    "Health literacy",
+                    "Informatics"
+                ],
+                answer: 2,
+                rationale: "Health literacy is the degree to which individuals have the capacity to obtain, process, and understand basic health information needed to make appropriate health decisions."
+            },
+            {
+                id: 50,
+                type: "mcq",
+                text: "An accountable nurse is tested when they make a mistake. According to professional standards, what should the nurse do?",
+                options: [
+                    "Cover up the mistake if it caused no patient harm.",
+                    "Wait to be questioned by others before admitting fault.",
+                    "Report the error and take responsibility to ensure patient safety regardless of personal consequences.",
+                    "Blame the error on faulty hospital equipment."
+                ],
+                answer: 2,
+                rationale: "An accountable nurse reports the error and takes responsibility to ensure patient safety regardless of personal consequences."
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(questions.length).fill(null);
+        let startTime;
+        let timerInterval;
+
+        const container = document.getElementById('game-container');
+        const footer = document.getElementById('exam-footer');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const timerDisplay = document.getElementById('timer');
+
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const hours = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
+                const minutes = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
+                const seconds = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+                timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function initApp() {
+            container.innerHTML = `
+                <div class="bg-white rounded-lg nclex-card p-8 text-center">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Ready to Begin?</h2>
+                    <p class="text-gray-600 mb-8 max-w-lg mx-auto">
+                        This exam mimics the NCLEX testing engine. You will be presented with 50 questions covering Documentation, Ethics, Law, and Informatics. Once you submit a question, you cannot return to it.
+                    </p>
+                    <button onclick="startExam()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-12 rounded-lg transition-colors">
+                        START EXAM
+                    </button>
+                </div>
+            `;
+        }
+
+        function startExam() {
+            currentQuestionIndex = 0;
+            userAnswers = new Array(questions.length).fill(null);
+            footer.classList.remove('hidden');
+            startTimer();
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQuestionIndex];
+            const isSata = q.type === "sata";
+            
+            // Update progress
+            const progress = ((currentQuestionIndex) / questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+
+            let optionsHtml = q.options.map((opt, idx) => {
+                const isSelected = isSata 
+                    ? (userAnswers[currentQuestionIndex] || []).includes(idx)
+                    : userAnswers[currentQuestionIndex] === idx;
+
+                return `
+                    <div onclick="selectOption(${idx})" class="option-container cursor-pointer border-2 border-gray-100 rounded-lg p-4 mb-3 flex items-start transition-all ${isSelected ? 'option-selected' : ''}">
+                        <div class="flex items-center h-6">
+                            <input type="${isSata ? 'checkbox' : 'radio'}" 
+                                   ${isSelected ? 'checked' : ''} 
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label class="font-medium text-gray-700">${opt}</label>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="bg-white rounded-lg nclex-card p-6 md:p-10 mb-6">
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Question ${currentQuestionIndex + 1}</span>
+                        ${isSata ? '<span class="sata-badge">Select All That Apply</span>' : ''}
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-8 leading-relaxed">
+                        ${q.text}
+                    </h3>
+                    <div class="space-y-2">
+                        ${optionsHtml}
+                    </div>
+                    <div class="mt-10 flex justify-end">
+                        <button id="next-btn" onclick="nextQuestion()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            ${currentQuestionIndex === questions.length - 1 ? 'FINISH' : 'NEXT'}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            updateNextButtonState();
+        }
+
+        function selectOption(idx) {
+            const q = questions[currentQuestionIndex];
+            if (q.type === "mcq") {
+                userAnswers[currentQuestionIndex] = idx;
+            } else {
+                if (!userAnswers[currentQuestionIndex]) userAnswers[currentQuestionIndex] = [];
+                const currentSelections = userAnswers[currentQuestionIndex];
+                const indexInArr = currentSelections.indexOf(idx);
+                if (indexInArr > -1) {
+                    currentSelections.splice(indexInArr, 1);
+                } else {
+                    currentSelections.push(idx);
+                }
+            }
+            renderQuestion();
+        }
+
+        function updateNextButtonState() {
+            const btn = document.getElementById('next-btn');
+            const ans = userAnswers[currentQuestionIndex];
+            const hasAnswer = Array.isArray(ans) ? ans.length > 0 : ans !== null;
+            btn.disabled = !hasAnswer;
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                finishExam();
+            }
+        }
+
+        function finishExam() {
+            clearInterval(timerInterval);
+            footer.classList.add('hidden');
+            
+            let correctCount = 0;
+            questions.forEach((q, idx) => {
+                const userAns = userAnswers[idx];
+                if (q.type === "mcq") {
+                    if (userAns === q.answer) correctCount++;
+                } else {
+                    // SATA - check if arrays contain same values
+                    if (Array.isArray(userAns) && 
+                        userAns.length === q.answer.length && 
+                        userAns.every(val => q.answer.includes(val))) {
+                        correctCount++;
+                    }
+                }
+            });
+
+            const percentage = Math.round((correctCount / questions.length) * 100);
+            const passed = percentage >= 75;
+
+            container.innerHTML = `
+                <div class="bg-white rounded-lg nclex-card p-10 text-center mb-8">
+                    <div class="mb-6">
+                        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full ${passed ? 'bg-green-100' : 'bg-red-100'} mb-4">
+                            <svg class="w-10 h-10 ${passed ? 'text-green-600' : 'text-red-600'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                ${passed ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>'}
+                            </svg>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-900">${passed ? 'Exam Passed' : 'Exam Failed'}</h2>
+                        <p class="text-gray-500 mt-2">AlliedRNPRep vExam 2 Completion</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <span class="block text-2xl font-bold text-blue-600">${percentage}%</span>
+                            <span class="text-xs text-gray-400 uppercase">Score</span>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <span class="block text-2xl font-bold text-blue-600">${correctCount}/50</span>
+                            <span class="text-xs text-gray-400 uppercase">Correct</span>
+                        </div>
+                    </div>
+
+                    <button onclick="viewReview()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all mb-4">
+                        REVIEW QUESTIONS & RATIONALES
+                    </button>
+                    <button onclick="location.reload()" class="w-full border border-gray-300 text-gray-600 py-3 rounded-lg hover:bg-gray-50 transition-all">
+                        RETAKE EXAM
+                    </button>
+                </div>
+            `;
+        }
+
+        function viewReview() {
+            let reviewHtml = questions.map((q, idx) => {
+                const userAns = userAnswers[idx];
+                let isCorrect = false;
+                if (q.type === "mcq") {
+                    isCorrect = userAns === q.answer;
+                } else {
+                    isCorrect = Array.isArray(userAns) && 
+                                userAns.length === q.answer.length && 
+                                userAns.every(val => q.answer.includes(val));
+                }
+
+                const optionsReview = q.options.map((opt, oIdx) => {
+                    let classes = "p-3 rounded mb-1 text-sm ";
+                    const isUserSelected = Array.isArray(userAns) ? userAns.includes(oIdx) : userAns === oIdx;
+                    const isCorrectOption = Array.isArray(q.answer) ? q.answer.includes(oIdx) : q.answer === oIdx;
+
+                    if (isCorrectOption) classes += "bg-green-50 border border-green-200 font-bold text-green-800";
+                    else if (isUserSelected && !isCorrectOption) classes += "bg-red-50 border border-red-200 text-red-800 line-through";
+                    else classes += "bg-gray-50 text-gray-500 opacity-60";
+
+                    return `<div class="${classes}">${oIdx + 1}. ${opt}</div>`;
+                }).join('');
+
+                return `
+                    <div class="bg-white rounded-lg border-l-4 ${isCorrect ? 'border-green-500' : 'border-red-500'} p-6 mb-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-gray-900">Question ${idx + 1}</span>
+                            <span class="${isCorrect ? 'text-green-600' : 'text-red-600'} text-xs font-bold uppercase tracking-widest">
+                                ${isCorrect ? 'Correct' : 'Incorrect'}
+                            </span>
+                        </div>
+                        <p class="text-gray-700 mb-4 font-medium">${q.text}</p>
+                        <div class="mb-4">
+                            ${optionsReview}
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-md border border-blue-100">
+                            <p class="text-blue-800 text-xs font-bold uppercase mb-1">Rationale</p>
+                            <p class="text-sm text-blue-900 leading-relaxed">${q.rationale}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Exam Review</h2>
+                    <button onclick="location.reload()" class="text-blue-600 text-sm font-semibold hover:underline">Back to Main</button>
+                </div>
+                ${reviewHtml}
+                <div class="mt-8 text-center pb-10">
+                    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="text-gray-400 hover:text-gray-600 transition-all">
+                         Back to Top
+                    </button>
+                </div>
+            `;
+            window.scrollTo(0, 0);
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
